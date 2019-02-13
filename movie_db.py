@@ -92,13 +92,21 @@ class Movie:
             return "Couldn't find the movie"
 
 
-def main():
-    Pyro4.Daemon.serveSimple(
-        {
-            Movie: "example.movie"
-        },
-        ns = False)
 
+def main():
+    """
+    Pyro4.Daemon.serveSimple({
+    Movie: 'movie',
+    }, host="0.0.0.0", port=9090, ns=False, verbose=True)
+    """
+    daemon = Pyro4.Daemon()
+    ns = Pyro4.locateNS()
+
+    url = daemon.register(Movie())
+
+    ns.register("movie" + str(counter), url)
+
+    daemon.requestLoop()
 
 if __name__=="__main__":
     main()
