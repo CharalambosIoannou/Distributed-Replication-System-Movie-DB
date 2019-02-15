@@ -4,21 +4,11 @@ import sys
 import threading
 import movie_db
 
+@Pyro4.expose
 class FrontEnd(object):
     def __init__(self):
-        ns = Pyro4.locateNS()
-        self.server_uris = [ns.lookup("movie1"), ns.lookup("movie2"), ns.lookup("movie3")]
-        serverlist = []
-        for uri in self.server_uris:
-            serverlist.append(Pyro4.Proxy(uri))
-        # update server lists
-        for s in serverlist:
-            try:
-                s.set_servers(self.server_uris)
-            except PyroError:
-                pass  # ignore the error
-
-        print(self.server_uris)
+        self.servers = set()
+        
 
     def __get_order_server(self):
         primary_server = True
@@ -74,7 +64,7 @@ class FrontEnd(object):
         else:
             return "Command not found. Please try again"
 
-
+"""
 class MyServer(socketserver.BaseRequestHandler):
     def handle(self):
         server = FrontEnd()
@@ -88,19 +78,26 @@ class MyServer(socketserver.BaseRequestHandler):
         response = res.encode()
         print("Frontend encoded: ", response)
         self.request.sendall(response)
+"""
+
+def find_servers():
+    # You can hardcode the stockmarket names for nasdaq and newyork, but it
+    # is more flexible if we just look for every available stockmarket.
+    servers = []
+    with Pyro4.locateNS() as ns:
+        for server, server_uri in ns.list(prefix="example.movie.").items():
+            print("found server", server)
+            servers.append(Pyro4.Proxy(server_uri))
+    if not servers:
+        raise ValueError("no servers found!first?)")
+    print(servers)
+    return servers
 
 
-def main(host, port):
-    # for i in range(1, 4):
-    #     t = threading.Thread(target=order_server.main, args=[i])
-    #     t.daemon = True
-    #     t.start()
-    server = socketserver.TCPServer((host, port), MyServer)
-    server.serve_forever()
 
+def main():
+    ser=FrontEnd()
+    ser.servers=find_servers()
 
 if __name__ == "__main__":
-    print("Arguments frontend: ", sys.argv)
-    hostname = sys.argv[1]
-    portnum = int(sys.argv[2])
-    main(hostname, portnum)
+    main()

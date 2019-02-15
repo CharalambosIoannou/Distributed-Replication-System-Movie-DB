@@ -1,6 +1,6 @@
 import csv
 import Pyro4
-
+import sys
 
 
 
@@ -98,15 +98,29 @@ def main():
     Pyro4.Daemon.serveSimple({
     Movie: 'movie',
     }, host="0.0.0.0", port=9090, ns=False, verbose=True)
-    """
+
     daemon = Pyro4.Daemon()
     ns = Pyro4.locateNS()
-
-    url = daemon.register(Movie())
-
-    ns.register("movie" + str(counter), url)
-
+    uri = daemon.register(Movie())
+    ns.register("movie_server" + str(counter), uri)
+    print("Running movie_server"+str(counter))
     daemon.requestLoop()
+
+    """
+    movie1=Movie()
+    movie2=Movie()
+    movie3=Movie()
+    with Pyro4.Daemon() as daemon:
+        movie1_uri = daemon.register(movie1)
+        movie2_uri = daemon.register(movie2)
+        movie3_uri = daemon.register(movie3)
+        with Pyro4.locateNS() as ns:
+            ns.register("example.movie.server1", movie1_uri)
+            ns.register("example.movie.server2", movie2_uri)
+            ns.register("example.movie.server3", movie3_uri)
+        print("Servers available.")
+        daemon.requestLoop()
+
 
 if __name__=="__main__":
     main()
