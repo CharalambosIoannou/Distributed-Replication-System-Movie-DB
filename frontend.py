@@ -1,20 +1,32 @@
+import json
 import Pyro4
-import socketserver
-import sys
-import threading
-import movie_db
+from Pyro4.errors import CommunicationError, PyroError
+
 
 @Pyro4.expose
 class FrontEnd(object):
     def __init__(self):
-        self.servers = set()
-        
-
-    def __get_order_server(self):
-        primary_server = True
-        for server in self.server_uris:
+        ns = Pyro4.locateNS()
+        self.server_uris = [ns.lookup("movie_server1"), ns.lookup("movie_server2"), ns.lookup("movie_server3")]
+        server_list = []
+        server_status=[]
+        for uri in self.server_uris:
+            server_list.append([Pyro4.Proxy(uri),Pyro4.Proxy(uri).status()])
+        #print(server_list)
+        # update server lists
+        for s in server_list:
             try:
-                actual_server = Pyro4.Proxy(server)
+                s[0].set_servers(self.server_uris)
+            except PyroError:
+                pass  # ignore the error
+
+        #print(self.server_uris)
+
+    def get_server(self):
+        primary_server = True
+        for server in self.server_list:
+            try:
+                actual_server = Pyro4.Proxy(server[0])
                 actual_server.set_primary_state(primary_server)
                 primary_server = False
                 return actual_server
@@ -24,9 +36,7 @@ class FrontEnd(object):
                 pass
             except PyroError:
                 pass
-
         return None  # todo throw No Remaining Servers exception
-
 
     def process_command(self, data):
         print("Frontend data: ", data)
@@ -46,7 +56,7 @@ class FrontEnd(object):
             # todo check length to make sure a server is online.
             return str(results)
 
-        elif command == "DELETE":
+        elif command == "GET_RATING":
             print("running delete front end")
             del_index = input
             results = self.__get_order_server().cancel_order(userid, del_index)
@@ -54,7 +64,7 @@ class FrontEnd(object):
             # todo check results to ensure things are fine :D
             return str(results)
 
-        elif command == "HISTORY":
+        elif command == "GET_AVG":
             print("Running History frontend")
             results = self.__get_order_server().get_order_history(userid)
             print("Frontend results: ", results)
@@ -64,40 +74,12 @@ class FrontEnd(object):
         else:
             return "Command not found. Please try again"
 
-"""
-class MyServer(socketserver.BaseRequestHandler):
-    def handle(self):
-        server = FrontEnd()
-        data = self.request.recv(1024).strip()
-        data = data.decode()
-
-        data_dict = json.loads(data)
-        res = server.process_command(data_dict)
-        # server log now
-        print("Frontend: ", res)
-        response = res.encode()
-        print("Frontend encoded: ", response)
-        self.request.sendall(response)
-"""
-
-def find_servers():
-    # You can hardcode the stockmarket names for nasdaq and newyork, but it
-    # is more flexible if we just look for every available stockmarket.
-    servers = []
-    with Pyro4.locateNS() as ns:
-        for server, server_uri in ns.list(prefix="example.movie.").items():
-            print("found server", server)
-            servers.append(Pyro4.Proxy(server_uri))
-    if not servers:
-        raise ValueError("no servers found!first?)")
-    print(servers)
-    return servers
-
 
 
 def main():
-    ser=FrontEnd()
-    ser.servers=find_servers()
+    fr=FrontEnd()
+
+
 
 if __name__ == "__main__":
     main()
