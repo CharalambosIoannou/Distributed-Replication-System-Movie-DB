@@ -36,11 +36,13 @@ class Movie(object):
 	def __init__(self):
 		self.movie_name_dict = movie_name_dict1
 		self.movie_rating_dict = movie_rating_dict1
+		self.is_primary = True
 
 
 	def set_movie(self, name, movie_name):
 		print(name, "entered the movie ", movie_name, " as input")
 		self.movie_name = movie_name
+		return movie_name
 
 	def get_name(self):
 		return self.movie_name
@@ -101,6 +103,9 @@ class Movie(object):
 
 	def status(self):
 		return self.is_disabled()
+
+	def set_primary_state(self, is_primary):
+		self.is_primary = is_primary
 
 
 
