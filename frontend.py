@@ -11,12 +11,12 @@ class FrontEnd(object):
 		self.server_list = []
 		server_status=[]
 		for uri in self.server_uris:
-			self.server_list.append([Pyro4.Proxy(uri),Pyro4.Proxy(uri).status()])
+			self.server_list.append(Pyro4.Proxy(uri))
 		#print(server_list)
 		# update server lists
 		for s in self.server_list:
 			try:
-				s[0].set_servers(self.server_uris)
+				s.set_servers(self.server_uris)
 			except PyroError:
 				pass  # ignore the error
 
@@ -24,11 +24,19 @@ class FrontEnd(object):
 
 	def get_server(self):
 		primary_server = True
-		for server in self.server_uris:
+		for i in range (0, len(self.server_uris)):
 			try:
-				actual_server = Pyro4.Proxy(server)
-				actual_server.set_primary_state(primary_server)
-				primary_server = False
+				actual_server = Pyro4.Proxy(self.server_uris[i])
+				status= actual_server.get_status()
+				print("Status: " , status)
+				if (status == "Overloaded" or status == "Offline"):
+					
+					if (i == len(self.server_uris) -1):
+						print("Run out of servers")
+						return
+					else:
+						print("changing server: ", i )
+						actual_server = Pyro4.Proxy(self.server_uris[i+1])
 				return actual_server
 			except ConnectionRefusedError:
 				pass
