@@ -1,85 +1,64 @@
 import random
 import string
-import sys
-import json
-
+import uuid
 import Pyro4
 
 
 class Person:
 	def __init__(self):
-		self.userid = self.__gen_user_id()
-		print(self.userid)
-		# now connect to the server
-
-	def __gen_user_id(self):
-		""" Generate user ID """
-		my_ID = ""
-		for i in range(1, 20):
-			my_ID += random.choice(string.ascii_uppercase)
-		return my_ID
-
-	def visit(self,user_inp,movie):
-		if (user_inp == 1):
-			self.retrieve_rating(movie)
-		elif (user_inp == 2):
-			self.submit_rating(movie)
-		elif (user_inp == 3):
-			self.get_avg(movie)
-
-	
-
+		self.user_id=uuid.uuid4()
 		
-	def retrieve_rating(self, movie):
-		#print("Rating for movie ", movie.get_name(),": ", movie.get_rating_by_name(userid))
-		#return movie.get_rating_by_name(userid)
-		option= self.requests("GET_RATING", self.userid, "")
+		
+	def retrieve_rating(self):
+		option= self.requests("GET_RATING", self.user_id, "")
 		print(option)
 
 
-	def submit_rating(self, movie):
+	def submit_rating(self):
 		inp=float(input("Enter a rating: "))
-		#movie.add_rating(userid, inp)
-		#print("Rating for movie ", movie.get_name() ,": ", movie.get_rating_by_name())
-		option= self.requests("ADD_RATING", self.userid, inp)
+		option= self.requests("ADD_RATING", self.user_id, inp)
 		print(option)
 
-	def get_avg(self, movie):
-		#print(movie.get_average_rating(userid))
-		option= self.requests("GET_AVG", self.userid, "")
+	def get_avg(self):
+		option= self.requests("GET_AVG", self.user_id, "")
 		print(option)
 
-	def set_movie_name(self,userid):
+	def set_movie_name(self):
 		inp=input("Enter name of movie: ")
-		#movie.set_movie(self.userid,inp)
-		option= self.requests("SET_MOVIE", self.userid, inp)
+		option= self.requests("SET_MOVIE", self.user_id, inp)
 		print(option)
 
-	def requests(self,request,userid,data):
-		data_to_send = {'request': request, 'userid': userid, 'data': data }
-		#data_json_encoded = json.dumps(data_to_send)
+	def requests(self, request, user_id, user_inp):
+		data_to_send = {'request' : request, 'user_id' : user_id, 'user_inp' : user_inp}
 		ns = Pyro4.locateNS()
-		self.server_uri = ns.lookup("frontend")
-		actual_server = Pyro4.Proxy(self.server_uri)
-		recv = actual_server.process_command(data_to_send)
-		return recv
+		self.server_list = ns.lookup("frontend")
+		actual_server = Pyro4.Proxy(self.server_list)
+		return actual_server.get_data_from_client(data_to_send)
+		
 
 
 def main():
-	exit_status = False
-	prog = Person()
-	print("Hello,", prog.userid)
-	movie=prog.set_movie_name(prog.userid)
-	while not exit_status:
+	person = Person()
+	print("Hello,", person.user_id)
+	person.set_movie_name()
+	while True:
 		print("1. Get a movie rating")
 		print("2. Add a movie rating")
 		print("3. Get a movie average rating")
+		print("4. Set a new movie")
 		user_inp = int(input("Select an option of what would you like to do: "))
 		if (user_inp == 0):
 			print ("Thank you come again")
 			return
 		else:
-			prog.visit(user_inp,movie)
+			if (user_inp == 1):
+				person.retrieve_rating()
+			elif (user_inp == 2):
+				person.submit_rating()
+			elif (user_inp == 3):
+				person.get_avg()
+			elif (user_inp == 4):
+				person.set_movie_name()
 
 if __name__== "__main__":
 	main()

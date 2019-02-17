@@ -33,45 +33,59 @@ with open('ratings.csv', encoding="utf8") as csv_file:
 
 @Pyro4.expose
 class Movie(object):
-	people = {}
-	servers = []
+	people_dict = {}
+	server_list = []
 
 	def __init__(self):
 		self.movie_name_dict = movie_name_dict1
 		self.movie_rating_dict = movie_rating_dict1
-		self.status = "Active"
+		
+	""" Server Functions"""
 
-	def set_servers(self, servers):
-		for uri in servers:
-			self.servers.append(Pyro4.Proxy(uri))
+	def set_servers(self, server_list):
+		for s in server_list:
+			self.server_list.append(Pyro4.Proxy(s))
 			
-	def set_state_people(self, state):
-		print("My state has been set to: ", str(state))
-		self.people = state
+	def copy_people_to_servers(self, state):
+		self.people_dict = state
 		
 		
-	def set_state_rating(self, state):
-		#print("My state has been set to: ", str(state))
+	def copy_rating_to_servers(self, state):
 		self.movie_rating_dict = state
 	
-	def update_backup_servers(self):
-		for s in self.servers:
-			s.set_state_people(self.people)
-			s.set_state_rating(self.movie_rating_dict)
-			print("Set state of remote server")
+	def copy_data_to_servers(self):
+		for s in self.server_list:
+			s.copy_people_to_servers(self.people_dict)
+			s.copy_rating_to_servers(self.movie_rating_dict)
 		return True
+	
+	def get_status(self):
+		result= random.choice(["Active","Overloaded","Offline"])
+		return ''.join(result)
+	
+	
+	def create_user(self, user_id, movie):
+		self.people_dict[user_id] = [movie]
+		
+		
+	""" Movie Functions"""
 	
 	def get_movie_name_by_id(self, movie_id):
 		return self.movie_name_dict.get(str(movie_id))
 
 	def set_movie(self, name, movie_name):
-
-		print(name, "entered the movie ", movie_name, " as input")
-		self.movie_name = movie_name
-			
-		if name not in self.people:
-			self.create_user(name,self.movie_name)
-		self.update_backup_servers()
+		if name not in self.people_dict:
+			print("First time setting movie")
+			self.create_user(name,movie_name)
+			print(name, "entered the movie ", movie_name, " as input")
+			self.movie_name = movie_name
+		else:
+			print("Choosing different movie")
+			for key in self.people_dict.keys():
+				if key == name:
+					self.people_dict[key] = movie_name
+		
+		self.copy_data_to_servers()
 		return movie_name
 
 
@@ -79,9 +93,9 @@ class Movie(object):
 		return self.movie_rating_dict.get(str(movie_id))
 
 	def get_rating_by_name(self, name):
-		if name not in self.people:
+		if name not in self.people_dict:
 			return "User not found"
-		self.movie_name=''.join((self.people[name]))
+		self.movie_name=''.join((self.people_dict[name]))
 		print(name, " made a request to get the rating for the movie ", self.movie_name)
 		
 		id_found = ""
@@ -90,55 +104,43 @@ class Movie(object):
 				id_found = movie
 		if id_found != "":
 			rating = (self.get_rating_by_id(str(id_found)))
-			self.update_backup_servers()
+			self.copy_data_to_servers()
 			return rating
 		else:
 			return None
 
 	def get_average_rating(self, name):
-		if name not in self.people:
+		if name not in self.people_dict:
 			return "User not found"
 		rating = self.get_rating_by_name(name)
-		self.update_backup_servers()
+		self.copy_data_to_servers()
 		return sum(rating) / len(rating)
 
 	def add_rating(self, name, rating):
-		if name not in self.people:
+		if name not in self.people_dict:
 			return "User not found"
 		print(name, " added a rating of ", rating, " for the movie ", self.movie_name)
-		
 		found_movie = False
 		for movie, movie_name in self.movie_name_dict.items():
 			if movie_name == self.movie_name:
 				self.movie_rating_dict[movie].append(rating)
 				# print("Successfully added new rating")
-				self.update_backup_servers()
+				self.copy_data_to_servers()
 				return "Successfully added new rating"
 		if not found_movie:
 			return "Couldn't find the movie"
 
 
-	def get_status(self):
-		result= random.choice(["Active","Overloaded","Offline"])
-		return ''.join(result)
-	
-	
-	def create_user(self, userid,movie):
-		self.people[userid] = [movie]
-	
-
-
-
-def main(counter):
+def main(server_number):
 	daemon = Pyro4.Daemon()
 	ns = Pyro4.locateNS()
 	url = daemon.register(Movie())
-	ns.register("movie_server" + str(counter), url)
-	print("Listening: " , "movie_server" + str(counter), url)
+	ns.register("movie_server" + str(server_number), url)
+	print("Listening: " , "movie_server" + str(server_number), url)
 	daemon.requestLoop()
 
 
 if __name__ == "__main__":
-	counter_val = sys.argv[1]
-	main(counter_val)
+	server_number = sys.argv[1]
+	main(server_number)
 
