@@ -1,4 +1,3 @@
-import json
 import Pyro4
 from Pyro4.errors import CommunicationError, PyroError
 
@@ -6,6 +5,8 @@ from Pyro4.errors import CommunicationError, PyroError
 @Pyro4.expose
 class FrontEnd(object):
 	def __init__(self):
+		self.counter = 0
+		self.timestamp = [0,0,0]
 		self.server_list=[]
 		self.connected_server_list= []
 		ns = Pyro4.locateNS()
@@ -23,7 +24,7 @@ class FrontEnd(object):
 			con.set_servers(self.server_list)
 
 
-	def find_available_server(self):
+	def find_available_server(self,query):
 		for i in range (0, len(self.server_list)):
 			try:
 				connect_server = Pyro4.Proxy(self.server_list[i])
@@ -37,6 +38,11 @@ class FrontEnd(object):
 					else:
 						print("changing server to server: ", i+2)
 						connect_server = Pyro4.Proxy(self.server_list[i+1])
+						i=i+1
+				if (query == True):
+					self.timestamp[i]=self.counter
+					
+				print("Timestamp: " , self.timestamp)
 				return connect_server
 			except ConnectionRefusedError:
 				pass
@@ -50,6 +56,7 @@ class FrontEnd(object):
 		request = data['request']
 		user_inp = data['user_inp']
 		userid = data['user_id']
+		query=False
 
 		print("com ", request)
 		print("inp ", user_inp)
@@ -60,25 +67,27 @@ class FrontEnd(object):
 		
 		if request == "ADD_RATING":
 			print("Running ADD RATING Function Frontend")
-			results = self.find_available_server().add_rating(userid, user_inp)
+			query= True
+			self.counter=self.counter + 1
+			results = self.find_available_server(query).add_rating(userid, user_inp)
 			print("Frontend results: ", results)
 			return str(results)
 
 		elif request == "GET_RATING":
 			print("Running GET RATING Function Frontend")
-			results = self.find_available_server().get_rating_by_name(userid)
+			results = self.find_available_server(query).get_rating_by_name(userid)
 			print("Frontend results: ", results)
 			return str(results)
 	
 		elif request == "GET_AVG":
 			print("Running GET AVG Function Frontend")
-			results = self.find_available_server().get_average_rating(userid)
+			results = self.find_available_server(query).get_average_rating(userid)
 			print("Frontend results: ", results)
 			return str(results)
 
 		elif request == "SET_MOVIE":
 			print("Setting movie frontend")
-			results = self.find_available_server().set_movie(userid, user_inp)
+			results = self.find_available_server(query).set_movie(userid, user_inp)
 			print("Frontend results: ", results)
 			return str(results)
 

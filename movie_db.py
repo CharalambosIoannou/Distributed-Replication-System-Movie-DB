@@ -35,10 +35,12 @@ with open('ratings.csv', encoding="utf8") as csv_file:
 class Movie(object):
 	people_dict = {}
 	server_list = []
+	timestamp = [0,0,0]
 
 	def __init__(self):
 		self.movie_name_dict = movie_name_dict1
 		self.movie_rating_dict = movie_rating_dict1
+		self.counter = 0
 		
 	""" Server Functions"""
 
@@ -121,10 +123,11 @@ class Movie(object):
 			return "User not found"
 		print(name, " added a rating of ", rating, " for the movie ", self.movie_name)
 		found_movie = False
-		for movie, movie_name in self.movie_name_dict.items():
-			if movie_name == self.movie_name:
+		for movie, movie_name1 in self.movie_name_dict.items():
+			if movie_name1 == self.movie_name:
 				self.movie_rating_dict[movie].append(rating)
 				# print("Successfully added new rating")
+				self.counter = self.counter + 1
 				self.copy_data_to_servers()
 				return "Successfully added new rating"
 		if not found_movie:
