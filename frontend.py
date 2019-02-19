@@ -5,7 +5,9 @@ from Pyro4.errors import CommunicationError, PyroError
 @Pyro4.expose
 class FrontEnd(object):
 	def __init__(self):
-		self.counter = 0
+		self.counter_server_1 = 0
+		self.counter_server_2 = 0
+		self.counter_server_3 = 0
 		self.timestamp = [0,0,0]
 		self.server_list=[]
 		self.connected_server_list= []
@@ -28,7 +30,7 @@ class FrontEnd(object):
 		for i in range (0, len(self.server_list)):
 			try:
 				connect_server = Pyro4.Proxy(self.server_list[i])
-				status= connect_server.get_status()
+				status= connect_server.set_status()
 				print("Status: " , status)
 				print("Using server ", i+1)
 				if (status == "Overloaded" or status == "Offline"):
@@ -39,10 +41,20 @@ class FrontEnd(object):
 						print("changing server to server: ", i+2)
 						connect_server = Pyro4.Proxy(self.server_list[i+1])
 						i=i+1
+				"""
 				if (query == True):
-					self.timestamp[i]=self.counter
+						if (i == 0):
+							self.counter_server_1 = self.counter_server_1 + 1
+							self.timestamp[0] = self.counter_server_1
+						elif (i == 1):
+							self.counter_server_2 = self.counter_server_2 + 1
+							self.timestamp[1] = self.counter_server_2
+						else:
+							self.counter_server_3 = self.counter_server_3 + 1
+							self.timestamp[2] = self.counter_server_3
 					
 				print("Timestamp: " , self.timestamp)
+				"""
 				return connect_server
 			except ConnectionRefusedError:
 				pass
@@ -68,9 +80,11 @@ class FrontEnd(object):
 		if request == "ADD_RATING":
 			print("Running ADD RATING Function Frontend")
 			query= True
-			self.counter=self.counter + 1
-			results = self.find_available_server(query).add_rating(userid, user_inp)
+			#self.counter=self.counter + 1
+			results, time = self.find_available_server(query).add_rating(userid, user_inp,self.timestamp)
 			print("Frontend results: ", results)
+			self.timestamp=time
+			print("TimeStamp received from server: ", self.timestamp)
 			return str(results)
 
 		elif request == "GET_RATING":
