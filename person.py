@@ -11,54 +11,98 @@ class Person:
 		
 	def retrieve_rating(self):
 		option= self.requests("GET_RATING", self.user_id, "")
+		if (option == "Error"):
+			return "Error"
 		print(option)
-
+	
+	
+	def view_rating(self):
+		option= self.requests("VIEW_RATING", self.user_id, "")
+		if (option == "Error"):
+			return "Error"
+		print(option)
+		
 
 	def submit_rating(self):
 		inp=float(input("Enter a rating: "))
 		option= self.requests("ADD_RATING", self.user_id, inp)
+		if (option == "Error"):
+			return "Error"
 		print(option)
-
+	
+	def update_rating(self):
+		inp=float(input("Enter the rating you want to change: "))
+		inp_1=float(input("Enter the new rating: "))
+		merged_inp=[inp,inp_1]
+		option= self.requests("UPDATE_RATING", self.user_id, merged_inp)
+		if (option == "Error"):
+			return "Error"
+		print(option)
+		
+		
 	def get_avg(self):
 		option= self.requests("GET_AVG", self.user_id, "")
+		if (option == "Error"):
+			return "Error"
 		print(option)
 
 	def set_movie_name(self):
 		inp=input("Enter name of movie: ")
 		option= self.requests("SET_MOVIE", self.user_id, inp)
+		while (option == "No movie found"):
+			inp=input("Enter name of movie: ")
+			option= self.requests("SET_MOVIE", self.user_id, inp)
+			print("Option: " , option)
+		if (option == "Error"):
+			return "Error"
 		print(option)
 
 	def requests(self, request, user_id, user_inp):
 		data_to_send = {'request' : request, 'user_id' : user_id, 'user_inp' : user_inp}
-		ns = Pyro4.locateNS()
-		self.server_list = ns.lookup("frontend")
-		actual_server = Pyro4.Proxy(self.server_list)
-		return actual_server.get_data_from_client(data_to_send)
+		try:
+			ns = Pyro4.locateNS()
+			self.server_list = ns.lookup("frontend")
+			actual_server = Pyro4.Proxy(self.server_list)
+			return actual_server.get_data_from_client(data_to_send)
+		except Pyro4.errors.NamingError:
+			print("Could not find the name server. Please start the server by typing 'pyro4-ns' in the command line")
+			return "Error"
 		
 
 
 def main():
 	person = Person()
 	print("Hello,", person.user_id)
-	person.set_movie_name()
+	if (person.set_movie_name() == "Error"):
+		return
 	while True:
 		print("1. Get a movie rating")
 		print("2. Add a movie rating")
 		print("3. Get a movie average rating")
 		print("4. Set a new movie")
+		print("5. View your ratings")
+		print("6. Update an existing rating")
 		user_inp = int(input("Select an option of what would you like to do: "))
 		if (user_inp == 0):
 			print ("Thank you come again")
 			return
 		else:
 			if (user_inp == 1):
-				person.retrieve_rating()
+				if (person.retrieve_rating() == "Error"):
+					return
 			elif (user_inp == 2):
-				person.submit_rating()
+				if (person.submit_rating() == "Error"):
+					return
 			elif (user_inp == 3):
-				person.get_avg()
+				if (person.get_avg() == "Error"):
+					return
 			elif (user_inp == 4):
-				person.set_movie_name()
+				if (person.set_movie_name() == "Error"):
+					return
+			elif (user_inp == 5):
+				if (person.view_rating() == "Error"):
+					return
+			
 
 if __name__== "__main__":
 	main()

@@ -21,7 +21,6 @@ class FrontEnd(object):
 		
 		for server in self.server_list:
 			self.connected_server_list.append(Pyro4.Proxy(server))
-			
 		for con in self.connected_server_list:
 			con.set_servers(self.server_list)
 
@@ -57,11 +56,17 @@ class FrontEnd(object):
 				"""
 				return connect_server
 			except ConnectionRefusedError:
-				pass
+				print("Not all servers are active")
+				return
 			except CommunicationError:
-				pass
+				print("Not all servers are active")
+				return
 			except PyroError:
-				pass
+				print("Not all servers are active")
+				return
+			except Pyro4.errors.CommunicationError:
+				print("Not all servers are active")
+				return
 		return None  # todo throw No Remaining Servers exception
 
 	def get_data_from_client(self, data):
@@ -89,35 +94,65 @@ class FrontEnd(object):
 
 		elif request == "GET_RATING":
 			print("Running GET RATING Function Frontend")
-			results = self.find_available_server(query).get_rating_by_name(userid)
+			results, time2 = self.find_available_server(query).get_rating_by_name(userid,self.timestamp)
 			print("Frontend results: ", results)
+			self.timestamp=time2
+			print("TimeStamp received from server: ", self.timestamp)
 			return str(results)
+		
+		elif request == "VIEW_RATING":
+			print("Running VIEW RATING Function Frontend")
+			results, time4 = self.find_available_server(query).view_rating(userid,self.timestamp)
+			print("Frontend results: ", results)
+			self.timestamp=time4
+			print("TimeStamp received from server: ", self.timestamp)
+			return str(results)
+		
 	
 		elif request == "GET_AVG":
 			print("Running GET AVG Function Frontend")
-			results = self.find_available_server(query).get_average_rating(userid)
+			results.time3 = self.find_available_server(query).get_average_rating(userid,self.timestamp)
 			print("Frontend results: ", results)
+			self.timestamp=time3
+			print("TimeStamp received from server: ", self.timestamp)
 			return str(results)
 
 		elif request == "SET_MOVIE":
 			print("Setting movie frontend")
-			results = self.find_available_server(query).set_movie(userid, user_inp)
+			results, time1 = self.find_available_server(query).set_movie(userid, user_inp,self.timestamp)
+			
 			print("Frontend results: ", results)
+			self.timestamp=time1
+			print("TimeStamp received from server: ", self.timestamp)
 			return str(results)
+		
+		elif requst == "UPDATE_RATING":
+			print("Running UPDATE RATING Function Frontend")
+			results, time = self.find_available_server(query).update_rating(userid, user_inp,self.timestamp)
+			print("Frontend results: ", results)
+			self.timestamp=time
+			print("TimeStamp received from server: ", self.timestamp)
+			return str(results)
+			
 
 		else:
 			return "Command not found. Please try again"
+		
+		
 
 
 
 def main():
-	daemon = Pyro4.Daemon()
-	ns = Pyro4.locateNS()
-	url = daemon.register(FrontEnd())
-	ns.register("frontend", url)
-	print("Listening: ")
-	daemon.requestLoop()
-
+	try:
+		daemon = Pyro4.Daemon()
+		ns = Pyro4.locateNS()
+		url = daemon.register(FrontEnd())
+		ns.register("frontend", url)
+		print("Listening: ")
+		daemon.requestLoop()
+	except Pyro4.errors.CommunicationError:
+		print("Not all servers are active")
+		return
 
 if __name__ == "__main__":
 	main()
