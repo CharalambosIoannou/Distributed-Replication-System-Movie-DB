@@ -41,8 +41,9 @@ class Movie(object):
 		self.status=""
 		#self.people_dict = {}
 		self.movie_name = ""
+		self.rating_tuples = []
 		self.users_rating_dict = defaultdict(list)
-		self.movie_name_dict = defaultdict(list)
+		self.movie_name_dict = defaultdict(list)  #todo: remove this line
 		self.movie_name_dict = movie_name_dict1
 		self.movie_rating_dict = movie_rating_dict1
 		self.number=number
@@ -60,6 +61,10 @@ class Movie(object):
 		return self.people_dict
 		
 		
+	def get_rating_tuples(self):
+		return self.rating_tuples
+	
+	
 	def get_rating_from_servers(self):
 		return self.movie_rating_dict
 		
@@ -95,8 +100,9 @@ class Movie(object):
 				self.movie_rating_dict = self.server_list[i].get_rating_from_servers()
 				self.movie_name = self.server_list[i].get_movie_from_servers()
 				self.user_recv_dict = self.server_list[i].get_user_ratings_from_servers()
+				self.copy_tuples = self.server_list[i].get_rating_tuples()
 
-
+		self.rating_tuples =  self.copy_tuples #self.rating_tuples +
 		if (len(self.people_dict) == 0):
 			self.people_dict=self.recv_people_dict
 		else:
@@ -173,8 +179,12 @@ class Movie(object):
 	
 	def view_rating(self,name,timestamp_recv):
 		self.copy_to_servers(timestamp_recv)
+		temp_rating= []
 		print("These are the your ratings: ")
-		return self.users_rating_dict.get(name),self.timestamp
+		for i in self.rating_tuples:
+			if (i[0] == name):
+				temp_rating.append([i[1],i[2]])
+		return temp_rating,self.timestamp
 		
 		
 	def update_rating(self,name,list_rating,timestamp_recv):
@@ -182,26 +192,13 @@ class Movie(object):
 		self.new_rating = list_rating[1]
 		print("These are the your ratings: ")
 		print(self.view_rating(name,timestamp_recv))
-		for user_id,submitted_rating in self.users_rating_dict.items():
-			print("here")
-			if (user_id == name):
-				print("here1")
-				for i in range (0,len(submitted_rating)):
-					print("here2")
-					if (submitted_rating[i] == self.rating_to_change):
-						print("here3")
-						submitted_rating[i]  = self.new_rating
-						break
-					else:
-						return "No rating found"
-			else:
-				return "No user found"
-		print("These are the NEW ratings: ")
-		final, self.timestamp = self.view_rating(name,timestamp_recv)
-		print("new user rat dict: ",self.users_rating_dict)
+		for i in self.rating_tuples:
+			if (i[0] == name and i[2] == self.rating_to_change):
+				i[2]=self.new_rating
+		print("new user rat dict: ",self.rating_tuples)
 		self.counter = self.counter + 1
 		self.set_list = self.set_timestamp_to_servers()
-		return final,self.timestamp
+		return self.get_rating_by_name(name,timestamp_recv),self.timestamp
 			
 
 	def get_rating_by_id(self, movie_id):
@@ -209,6 +206,7 @@ class Movie(object):
 
 	def get_rating_by_name(self, name,timestamp_recv):
 		self.copy_to_servers(timestamp_recv)
+		test_list=[]
 		if name not in self.people_dict:
 			return "User not found"
 		self.movie_name=''.join((self.people_dict[name]))
@@ -219,6 +217,10 @@ class Movie(object):
 				id_found = movie
 		if id_found != "":
 			rating = (self.get_rating_by_id(str(id_found)))
+			for i in self.rating_tuples:
+					if (i[1] == self.movie_name):
+						test_list.append(i[2])
+			rating = rating + test_list
 			return rating,self.timestamp
 		else:
 			return None,self.timestamp
@@ -241,14 +243,19 @@ class Movie(object):
 		print("MOVIE NAME: " , self.movie_name)
 		print(name, " added a rating of ", rating, " for the movie ", self.movie_name)
 		found_movie = False
-
+		
 		for movie, movie_name1 in self.movie_name_dict.items():
 			if movie_name1 == self.movie_name:
 				print("MOVIE RATING DICT: ", self.movie_rating_dict[movie])
 				print("USER RATING DICT: ", self.users_rating_dict)
-				self.movie_rating_dict[movie].append(rating)
-				rating_funct ,akiro = self.get_rating_by_name(name,self.timestamp)
-				print("RECV: ",rating_funct)
+				#self.movie_rating_dict[movie].append(rating)
+				self.rating_tuples.append([name, movie_name1, rating])
+				
+
+				#joined , times = self.get_rating_by_name(name,timestamp_recv)
+				#self.combined = joined + test_list
+				
+				print("NEW DICT: ", self.rating_tuples)
 				if (len(self.users_rating_dict) == 0):
 					self.users_rating_dict[name] = [rating]
 				elif (name not in self.users_rating_dict):
