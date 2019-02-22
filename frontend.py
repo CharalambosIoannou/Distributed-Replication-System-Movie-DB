@@ -111,7 +111,7 @@ class FrontEnd(object):
 	
 		elif request == "GET_AVG":
 			print("Running GET AVG Function Frontend")
-			results.time3 = self.find_available_server(query).get_average_rating(userid,self.timestamp)
+			results, time3 = self.find_available_server(query).get_average_rating(userid,self.timestamp)
 			print("Frontend results: ", results)
 			self.timestamp=time3
 			print("TimeStamp received from server: ", self.timestamp)
@@ -126,11 +126,11 @@ class FrontEnd(object):
 			print("TimeStamp received from server: ", self.timestamp)
 			return str(results)
 		
-		elif requst == "UPDATE_RATING":
+		elif request == "UPDATE_RATING":
 			print("Running UPDATE RATING Function Frontend")
-			results, time = self.find_available_server(query).update_rating(userid, user_inp,self.timestamp)
+			results, time5 = self.find_available_server(query).update_rating(userid, user_inp,self.timestamp)
 			print("Frontend results: ", results)
-			self.timestamp=time
+			self.timestamp=time5
 			print("TimeStamp received from server: ", self.timestamp)
 			return str(results)
 			

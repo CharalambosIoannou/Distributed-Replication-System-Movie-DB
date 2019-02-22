@@ -79,7 +79,7 @@ def main():
 		print("1. Get a movie rating")
 		print("2. Add a movie rating")
 		print("3. Get a movie average rating")
-		print("4. Set a new movie")
+		print("4. Set a new movie") #todo Do some more testing
 		print("5. View your ratings")
 		print("6. Update an existing rating")
 		user_inp = int(input("Select an option of what would you like to do: "))
@@ -101,6 +101,9 @@ def main():
 					return
 			elif (user_inp == 5):
 				if (person.view_rating() == "Error"):
+					return
+			elif (user_inp == 6):
+				if (person.update_rating() == "Error"):
 					return
 			
 

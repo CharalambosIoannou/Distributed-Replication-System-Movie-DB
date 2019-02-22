@@ -1,7 +1,7 @@
 import csv
 import random
 import sys
-
+from collections import defaultdict
 import Pyro4
 
 
@@ -41,7 +41,8 @@ class Movie(object):
 		self.status=""
 		#self.people_dict = {}
 		self.movie_name = ""
-		self.users_rating_dict = {}
+		self.users_rating_dict = defaultdict(list)
+		self.movie_name_dict = defaultdict(list)
 		self.movie_name_dict = movie_name_dict1
 		self.movie_rating_dict = movie_rating_dict1
 		self.number=number
@@ -81,26 +82,38 @@ class Movie(object):
 
 	def get_timestamp_from_servers(self):
 		return self.timestamp
-		
-	def merge_dict(self,x,y):
-		self.z = x.copy()
-		self.z.update(y)
-		return self.z
-    
+
+
 	def get_data_from_server(self,server_number):
-		print("SERVER people dict: " ,self.people_dict)
+		dict3 = {}
+		dict2 = {}
 		print("Inside get data funct and the server number is: " , server_number)
 		for i in range (0,len(self.server_list)):
 			if (i == int(server_number)):
-				recv_people_dict = self.server_list[i].get_people_from_servers()
+				self.recv_people_dict = self.server_list[i].get_people_from_servers()
 				self.server_list[i].get_timestamp_from_servers()
 				self.movie_rating_dict = self.server_list[i].get_rating_from_servers()
 				self.movie_name = self.server_list[i].get_movie_from_servers()
-				user_rating_recv = self.server_list[i].get_user_ratings_from_servers()
-		#self.movie_rating_dict = self.merge_dict(recv_movie_rating_dict,self.movie_rating_dict )
-		print("MERGED DICTS: " , self.merge_dict(recv_people_dict,self.people_dict))
-		self.people_dict = self.merge_dict(recv_people_dict,self.people_dict)
-		self.users_rating_dict =  self.merge_dict(user_rating_recv,self.users_rating_dict)
+				self.user_recv_dict = self.server_list[i].get_user_ratings_from_servers()
+
+
+		if (len(self.people_dict) == 0):
+			self.people_dict=self.recv_people_dict
+		else:
+			dict2={**self.people_dict,**self.recv_people_dict}
+			self.people_dict = dict2
+				
+				
+		if (len(self.users_rating_dict) == 0):
+			self.users_rating_dict=self.user_recv_dict
+		else:
+			for key in self.users_rating_dict.keys():
+				#dict3[key] = [self.users_rating_dict[key] , self.user_recv_dict[key]]
+				dict3 = {**self.users_rating_dict , **self.user_recv_dict}
+				self.users_rating_dict = dict3
+
+		print("PEOPLE DICT: " , self.people_dict)
+		print("RATING DICT: ", self.users_rating_dict)
 		return True
 	
 	def get_status(self):
@@ -161,15 +174,35 @@ class Movie(object):
 	def view_rating(self,name,timestamp_recv):
 		self.copy_to_servers(timestamp_recv)
 		print("These are the your ratings: ")
-		return self.users_rating_dict.values(),self.timestamp
+		return self.users_rating_dict.get(name),self.timestamp
 		
 		
 	def update_rating(self,name,list_rating,timestamp_recv):
+		self.rating_to_change = list_rating[0]
+		self.new_rating = list_rating[1]
 		print("These are the your ratings: ")
-		for iterate_elements in self.users_rating_dict.values():
-			print(iterate_elements)
-		return
-		
+		print(self.view_rating(name,timestamp_recv))
+		for user_id,submitted_rating in self.users_rating_dict.items():
+			print("here")
+			if (user_id == name):
+				print("here1")
+				for i in range (0,len(submitted_rating)):
+					print("here2")
+					if (submitted_rating[i] == self.rating_to_change):
+						print("here3")
+						submitted_rating[i]  = self.new_rating
+						break
+					else:
+						return "No rating found"
+			else:
+				return "No user found"
+		print("These are the NEW ratings: ")
+		final, self.timestamp = self.view_rating(name,timestamp_recv)
+		print("new user rat dict: ",self.users_rating_dict)
+		self.counter = self.counter + 1
+		self.set_list = self.set_timestamp_to_servers()
+		return final,self.timestamp
+			
 
 	def get_rating_by_id(self, movie_id):
 		return self.movie_rating_dict.get(str(movie_id))
@@ -194,10 +227,12 @@ class Movie(object):
 		self.copy_to_servers(timestamp_recv)
 		if name not in self.people_dict:
 			return "User not found"
-		rating = self.get_rating_by_name(name,timestamp_recv)
+		rating,self.timestamp = self.get_rating_by_name(name,timestamp_recv)
+		print("AVERAGE: ",rating)
 		return sum(rating) / len(rating) , self.timestamp
 
 	def add_rating(self, name, rating, timestamp_recv):
+		#self.users_rating_dict.setdefault(key, []).append(value)
 		self.copy_to_servers(timestamp_recv)
 		print("People dict: " , self.people_dict)
 		print("New updated timestamp: ", self.timestamp)
@@ -209,8 +244,18 @@ class Movie(object):
 
 		for movie, movie_name1 in self.movie_name_dict.items():
 			if movie_name1 == self.movie_name:
+				print("MOVIE RATING DICT: ", self.movie_rating_dict[movie])
+				print("USER RATING DICT: ", self.users_rating_dict)
 				self.movie_rating_dict[movie].append(rating)
-				self.users_rating_dict[name]=rating
+				rating_funct ,akiro = self.get_rating_by_name(name,self.timestamp)
+				print("RECV: ",rating_funct)
+				if (len(self.users_rating_dict) == 0):
+					self.users_rating_dict[name] = [rating]
+				elif (name not in self.users_rating_dict):
+					self.users_rating_dict[name] = [rating]
+				else:
+					self.users_rating_dict[name].append(rating)
+				print("APPENDED RATING DICT: " , self.users_rating_dict)
 				print("Successfully added new rating")
 				self.counter = self.counter + 1
 				self.set_list = self.set_timestamp_to_servers()
