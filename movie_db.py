@@ -89,16 +89,11 @@ class Movie(object):
 		return self.timestamp
 
 	def get_data_from_server(self,server_number):
-		dict3 = {}
-		dict2 = {}
+		tmp = {}
 		print("Inside get data funct and the server number is: " , server_number)
 		for i in range (0,len(self.server_list)):
 			if (i == int(server_number)):
 				self.recv_people_dict = self.server_list[i].get_people_from_servers()
-				self.server_list[i].get_timestamp_from_servers()
-				self.movie_rating_dict = self.server_list[i].get_rating_from_servers()
-				self.movie_name = self.server_list[i].get_movie_from_servers()
-				self.user_recv_dict = self.server_list[i].get_user_ratings_from_servers()
 				self.copy_tuples = self.server_list[i].get_rating_tuples()
 				
 		update_elems = [x for x in self.copy_tuples if not x in self.rating_tuples]
@@ -107,20 +102,26 @@ class Movie(object):
 		if (len(self.people_dict) == 0):
 			self.people_dict=self.recv_people_dict
 		else:
-			dict2={**self.people_dict,**self.recv_people_dict}
-			self.people_dict = dict2
-			
-			
-		if (len(self.users_rating_dict) == 0):
-			self.users_rating_dict=self.user_recv_dict
-		else:
-			for key in self.users_rating_dict.keys():
-				#dict3[key] = [self.users_rating_dict[key] , self.user_recv_dict[key]]
-				dict3 = {**self.users_rating_dict , **self.user_recv_dict}
-				self.users_rating_dict = dict3
+			tmp={**self.people_dict,**self.recv_people_dict}
+			self.people_dict = tmp
+		
+		print("BEFORE DEL PEOPLE DICT: " , self.rating_tuples)
+		if (len(self.rating_tuples) != 0):
+			del_elems=[]
+			for j in self.rating_tuples:
+				if (j[3] == 'del'):
+					del_elems.append([j[0],j[1],j[2],'add'])
 
-		print("PEOPLE DICT: " , self.people_dict)
-		print("RATING DICT: ", self.users_rating_dict)
+				
+			print("del elems: " , del_elems)
+			
+			for k in del_elems:
+				if k in self.rating_tuples:
+					self.rating_tuples.remove(k)
+			
+			
+		print("AFTER DEL PEOPLE DICT: " , self.rating_tuples)
+
 		return True
 	
 	def get_status(self):
@@ -163,7 +164,6 @@ class Movie(object):
 			print("No movie found")
 			return "No movie found",self.timestamp
 		else:
-			
 			if name not in self.people_dict:
 				print("First time setting movie")
 				self.people_dict[name] = [movie_name]
@@ -184,7 +184,7 @@ class Movie(object):
 		temp_rating= []
 		print("These are the your ratings: ")
 		for i in self.rating_tuples:
-			if (i[0] == name):
+			if (i[0] == name and i[3] != 'del'):
 				temp_rating.append([i[1],i[2]])
 		return temp_rating,self.timestamp
 		
@@ -194,13 +194,26 @@ class Movie(object):
 		self.new_rating = list_rating[1]
 		print("These are the your ratings: ")
 		print(self.view_rating(name,timestamp_recv))
+		count_in_list = 0
+		
 		for i in self.rating_tuples:
-			if (i[0] == name and i[2] == self.rating_to_change):
-				i[2]=self.new_rating
+			print("i: ", i)
+			print("i0: ", i[0])
+			print("i2: ", i[2])
+			print("name: ", name)
+			print("self.rating_to_change: ", self.rating_to_change)
+			if (i[0] == name and i[2] == float(self.rating_to_change)):
+				print("count in list: " , count_in_list)
+				self.rating_tuples[count_in_list] = [name, i[1], self.new_rating,'add']
+				self.rating_tuples.append([name, i[1], self.rating_to_change,'del'])
+				#self.rating_tuples.append()
+				break
+			count_in_list = count_in_list + 1
 		print("new user rat dict: ",self.rating_tuples)
 		self.counter = self.counter + 1
 		self.set_list = self.set_timestamp_to_servers()
-		return self.get_rating_by_name(name,timestamp_recv),self.timestamp
+		res= "Successfully changed rating from ", self.rating_to_change, " to ", self.new_rating
+		return res,self.timestamp
 		
 
 	def get_rating_by_id(self, movie_id):
@@ -210,19 +223,24 @@ class Movie(object):
 		self.copy_to_servers(timestamp_recv)
 		test_list=[]
 		if name not in self.people_dict:
-			return "User not found"
-		print(name, " made a request to get the rating for the movie ", self.movie_name)
+			return "User not found",self.timestamp
+		else:
+			for key in self.people_dict.keys():
+					if key == name:
+						current_movie_selected = ''.join(self.people_dict[key])
+			
+		print(name, " made a request to get the rating for the movie ", current_movie_selected)
 		id_found = ""
 		for movie in self.movie_rating_dict:
-			if self.get_movie_name_by_id(str(movie)) == self.movie_name:
+			if self.get_movie_name_by_id(str(movie)) == current_movie_selected:
 				id_found = movie
 		if id_found != "":
 			rating = (self.get_rating_by_id(str(id_found)))
 			for i in self.rating_tuples:
-					if (i[1] == self.movie_name):
+					if (i[1] == current_movie_selected and i[3] != 'del'):
 						test_list.append(i[2])
 			rating = rating + test_list
-			return rating,self.timestamp
+			return sorted(rating),self.timestamp
 		else:
 			return None,self.timestamp
 
@@ -232,30 +250,27 @@ class Movie(object):
 			return "User not found"
 		rating,self.timestamp = self.get_rating_by_name(name,timestamp_recv)
 		print("AVERAGE: ",rating)
-		return sum(rating) / len(rating) , self.timestamp
+		avg= "Average: " , sum(rating) / len(rating)
+		return  avg , self.timestamp
 
 	def add_rating(self, name, rating, timestamp_recv):
 		#self.users_rating_dict.setdefault(key, []).append(value)
 		self.copy_to_servers(timestamp_recv)
-		print("People dict: " , self.people_dict)
-		print("New updated timestamp: ", self.timestamp)
-		print("NAME: ", name)
-		print("MOVIE NAME: " , self.movie_name)
-		print(name, " added a rating of ", rating, " for the movie ", self.movie_name)
+		for key in self.people_dict.keys():
+			if key == name:
+				current_movie_selected = ''.join(self.people_dict[key])
+		for i in self.rating_tuples:
+			if (name == i[0] and i[1] == current_movie_selected):
+				print("HERE")
+				return "Rating already added" ,self.timestamp
+		print(name, " added a rating of ", rating, " for the movie ", current_movie_selected)
 		found_movie = False
 		
 		for movie, movie_name1 in self.movie_name_dict.items():
-			if movie_name1 == self.movie_name:
-				print("MOVIE RATING DICT: ", self.movie_rating_dict[movie])
-				print("USER RATING DICT: ", self.users_rating_dict)
+			if movie_name1 == current_movie_selected:
 				#self.movie_rating_dict[movie].append(rating)
-				self.rating_tuples.append([name, movie_name1, rating])
+				self.rating_tuples.append([name, movie_name1, rating,'add'])
 				
-
-				#joined , times = self.get_rating_by_name(name,timestamp_recv)
-				#self.combined = joined + test_list
-				
-				print("NEW DICT: ", self.rating_tuples)
 				if (len(self.users_rating_dict) == 0):
 					self.users_rating_dict[name] = [rating]
 				elif (name not in self.users_rating_dict):
@@ -266,11 +281,9 @@ class Movie(object):
 				print("Successfully added new rating")
 				self.counter = self.counter + 1
 				self.set_list = self.set_timestamp_to_servers()
-				print("Timestamp array ", self.set_list)
 				print("New updated timestamp below: ", self.timestamp)
-				return self.get_rating_by_name(name,timestamp_recv), self.timestamp
-		if not found_movie:
-			return "Couldn't find the movie"
+				return "Successfully added new rating", self.timestamp
+	
 
 
 def main(server_number):
