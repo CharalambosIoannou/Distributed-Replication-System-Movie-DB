@@ -88,7 +88,6 @@ class Movie(object):
 	def get_timestamp_from_servers(self):
 		return self.timestamp
 
-
 	def get_data_from_server(self,server_number):
 		dict3 = {}
 		dict2 = {}
@@ -101,15 +100,17 @@ class Movie(object):
 				self.movie_name = self.server_list[i].get_movie_from_servers()
 				self.user_recv_dict = self.server_list[i].get_user_ratings_from_servers()
 				self.copy_tuples = self.server_list[i].get_rating_tuples()
-
-		self.rating_tuples =  self.copy_tuples #self.rating_tuples +
+				
+		update_elems = [x for x in self.copy_tuples if not x in self.rating_tuples]
+		self.rating_tuples = self.rating_tuples + update_elems
+		
 		if (len(self.people_dict) == 0):
 			self.people_dict=self.recv_people_dict
 		else:
 			dict2={**self.people_dict,**self.recv_people_dict}
 			self.people_dict = dict2
-				
-				
+			
+			
 		if (len(self.users_rating_dict) == 0):
 			self.users_rating_dict=self.user_recv_dict
 		else:
@@ -173,6 +174,7 @@ class Movie(object):
 				for key in self.people_dict.keys():
 					if key == name:
 						self.people_dict[key] = movie_name
+				self.movie_name = movie_name
 			self.counter = self.counter + 1
 			self.set_list = self.set_timestamp_to_servers()
 			return movie_name, self.timestamp
@@ -199,7 +201,7 @@ class Movie(object):
 		self.counter = self.counter + 1
 		self.set_list = self.set_timestamp_to_servers()
 		return self.get_rating_by_name(name,timestamp_recv),self.timestamp
-			
+		
 
 	def get_rating_by_id(self, movie_id):
 		return self.movie_rating_dict.get(str(movie_id))
@@ -209,7 +211,6 @@ class Movie(object):
 		test_list=[]
 		if name not in self.people_dict:
 			return "User not found"
-		self.movie_name=''.join((self.people_dict[name]))
 		print(name, " made a request to get the rating for the movie ", self.movie_name)
 		id_found = ""
 		for movie in self.movie_rating_dict:
@@ -239,7 +240,6 @@ class Movie(object):
 		print("People dict: " , self.people_dict)
 		print("New updated timestamp: ", self.timestamp)
 		print("NAME: ", name)
-		self.movie_name=''.join((self.people_dict[name]))
 		print("MOVIE NAME: " , self.movie_name)
 		print(name, " added a rating of ", rating, " for the movie ", self.movie_name)
 		found_movie = False
