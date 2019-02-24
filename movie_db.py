@@ -39,11 +39,8 @@ class Movie(object):
 
 	def __init__(self,number):
 		self.status=""
-		#self.people_dict = {}
 		self.movie_name = ""
 		self.rating_tuples = []
-		self.users_rating_dict = defaultdict(list)
-		self.movie_name_dict = defaultdict(list)  #todo: remove this line
 		self.movie_name_dict = movie_name_dict1
 		self.movie_rating_dict = movie_rating_dict1
 		self.number=number
@@ -64,17 +61,6 @@ class Movie(object):
 	def get_rating_tuples(self):
 		return self.rating_tuples
 	
-	
-	def get_rating_from_servers(self):
-		return self.movie_rating_dict
-		
-		
-	def get_movie_from_servers(self):
-		return self.movie_name
-	
-	def get_user_ratings_from_servers(self):
-		return self.users_rating_dict
-
 		
 	def get_counter(self):
 		return self.counter
@@ -85,8 +71,6 @@ class Movie(object):
 		return self.timestamp
 	
 
-	def get_timestamp_from_servers(self):
-		return self.timestamp
 
 	def get_data_from_server(self,server_number):
 		tmp = {}
@@ -185,34 +169,31 @@ class Movie(object):
 		print("These are the your ratings: ")
 		for i in self.rating_tuples:
 			if (i[0] == name and i[3] != 'del'):
-				temp_rating.append([i[1],i[2]])
-		return temp_rating,self.timestamp
+				temp_rating.append([i[1],": ",i[2]])
+		res= ' '.join(str(r) for v in temp_rating for r in v)
+		return res,self.timestamp
 		
 		
 	def update_rating(self,name,list_rating,timestamp_recv):
-		self.rating_to_change = list_rating[0]
+		movie_to_change=list_rating[0]
+		#self.rating_to_change = list_rating[1]
 		self.new_rating = list_rating[1]
 		print("These are the your ratings: ")
 		print(self.view_rating(name,timestamp_recv))
 		count_in_list = 0
-		
 		for i in self.rating_tuples:
-			print("i: ", i)
-			print("i0: ", i[0])
-			print("i2: ", i[2])
-			print("name: ", name)
-			print("self.rating_to_change: ", self.rating_to_change)
-			if (i[0] == name and i[2] == float(self.rating_to_change)):
-				print("count in list: " , count_in_list)
+			if (i[0] == name and i[1]==movie_to_change ):
+				self.rating_to_change = i[2]
+				self.rating_tuples.append([name, i[1], self.rating_to_change ,'del'])
 				self.rating_tuples[count_in_list] = [name, i[1], self.new_rating,'add']
-				self.rating_tuples.append([name, i[1], self.rating_to_change,'del'])
+				
 				#self.rating_tuples.append()
 				break
 			count_in_list = count_in_list + 1
 		print("new user rat dict: ",self.rating_tuples)
 		self.counter = self.counter + 1
 		self.set_list = self.set_timestamp_to_servers()
-		res= "Successfully changed rating from ", self.rating_to_change, " to ", self.new_rating
+		res= "Successfully changed rating of movie ", movie_to_change," from ", self.rating_to_change, " to ", self.new_rating
 		return res,self.timestamp
 		
 
@@ -268,16 +249,7 @@ class Movie(object):
 		
 		for movie, movie_name1 in self.movie_name_dict.items():
 			if movie_name1 == current_movie_selected:
-				#self.movie_rating_dict[movie].append(rating)
 				self.rating_tuples.append([name, movie_name1, rating,'add'])
-				
-				if (len(self.users_rating_dict) == 0):
-					self.users_rating_dict[name] = [rating]
-				elif (name not in self.users_rating_dict):
-					self.users_rating_dict[name] = [rating]
-				else:
-					self.users_rating_dict[name].append(rating)
-				print("APPENDED RATING DICT: " , self.users_rating_dict)
 				print("Successfully added new rating")
 				self.counter = self.counter + 1
 				self.set_list = self.set_timestamp_to_servers()

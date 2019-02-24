@@ -31,9 +31,10 @@ class Person:
 		print(option)
 	
 	def update_rating(self):
-		inp=float(input("Enter the rating you want to change: "))
+		inp_movie= input("Enter the movie name that you want to change the rating: ")
+		#inp=float(input("Enter the rating you want to change: "))
 		inp_1=float(input("Enter the new rating: "))
-		merged_inp=[inp,inp_1]
+		merged_inp=[inp_movie,inp_1]
 		option= self.requests("UPDATE_RATING", self.user_id, merged_inp)
 		if (option == "Error"):
 			return "Error"
@@ -88,7 +89,7 @@ def main():
 		print("1. Get a movie rating")
 		print("2. Add a movie rating")
 		print("3. Get a movie average rating")
-		print("4. Set a new movie") #todo Do some more testing
+		print("4. Set a new movie")
 		print("5. View your ratings")
 		print("6. Update an existing rating")
 		user_inp = input("Select an option of what would you like to do: ")
