@@ -8,7 +8,6 @@ class FrontEnd(object):
 		self.daemon = daemon
 		try:
 			if (self.read_file() == ""):
-				print("YES")
 				self.timestamp = [0,0,0]
 			else:
 				timestamp_in_file=self.read_file()
@@ -39,7 +38,6 @@ class FrontEnd(object):
 
 
 
-	#todo remove query parameter
 	def find_available_server(self):
 		for i in range (0, len(self.server_list)):
 			try:
@@ -57,10 +55,7 @@ class FrontEnd(object):
 					print("changing server to server: ", i+1)
 					connect_server = Pyro4.Proxy(self.server_list[i])
 					status= connect_server.set_status()
-					print("Status of new server: " , status)
 
-				print("before return: ", i+1)
-				print(connect_server)
 				return connect_server
 			except ConnectionRefusedError:
 				print("Not all servers are active")
@@ -98,7 +93,6 @@ class FrontEnd(object):
 		if request == "ADD_RATING":
 			print("Running ADD RATING Function Frontend")
 			query= True
-			#self.counter=self.counter + 1
 			results, time = self.find_available_server().add_rating(userid, user_inp,self.timestamp)
 			print("Frontend results: ", results)
 			self.timestamp=time

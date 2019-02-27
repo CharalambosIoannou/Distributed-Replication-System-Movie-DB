@@ -6,8 +6,6 @@ from time import sleep
 
 
 class Person :
-	
-	
 	def __init__(self) :
 		self.user_id = uuid.uuid4()
 		Pyro4.config.MAX_RETRIES = 0
@@ -41,6 +39,10 @@ class Person :
 		inp_1 = float(input("Enter the new rating: "))
 		merged_inp = [inp_movie, inp_1]
 		option = self.requests("UPDATE_RATING", self.user_id, merged_inp)
+		while option == "No movie found" :
+			inp_movie = input("No movie found with this name. Please enter the name of a valid movie: ")
+			merged_inp = [inp_movie, inp_1]
+			option = self.requests("UPDATE_RATING", self.user_id, merged_inp)
 		if option == "Error" :
 			return "Error"
 		print(option)
@@ -91,8 +93,6 @@ class Person :
 			self.server_list = ns.lookup("frontend")
 			
 			actual_server = Pyro4.Proxy(self.server_list)
-			#print("Found the Servers. Starting new Session: ")
-			#main()
 			return actual_server.get_data_from_client(data_to_send)
 
 

@@ -219,12 +219,26 @@ class Movie(object):
 		
 	def update_rating(self,name,list_rating,timestamp_recv):
 		movie_to_change=list_rating[0]
+		"""
+		for i in self.rating_tuples:
+			print("i1: " , i[1])
+			print("movie_to_change: " , movie_to_change)
+			print("name: " , name)
+			print("i[0]: " , i[0])
+			if (i[1] != movie_to_change and name != i[0]):
+				print("here")
+				return "No movie found",self.timestamp
+		"""
 		#self.rating_to_change = list_rating[1]
 		self.new_rating = list_rating[1]
 		print("These are the your ratings: ")
 		print(self.view_rating(name,timestamp_recv))
 		count_in_list = 0
 		for i in self.rating_tuples:
+			print("i1: " , i[1])
+			print("movie_to_change: " , movie_to_change)
+			print("name: " , name)
+			print("i[0]: " , i[0])
 			if (i[0] == name and i[1]==movie_to_change ):
 				self.rating_to_change = i[2]
 				self.rating_tuples.append([name, i[1], self.rating_to_change ,'del'])
@@ -232,6 +246,8 @@ class Movie(object):
 				
 				#self.rating_tuples.append()
 				break
+			else:
+				return "No movie found",self.timestamp
 			count_in_list = count_in_list + 1
 		print("new user rat dict: ",self.rating_tuples)
 		self.counter = self.counter + 1
