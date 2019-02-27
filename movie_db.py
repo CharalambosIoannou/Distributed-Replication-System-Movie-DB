@@ -46,6 +46,7 @@ class Movie(object):
 		self.number=number
 		self.counter = 0
 		self.timestamp = [0,0,0]
+
 		
 	""" Server Functions"""
 
@@ -115,6 +116,8 @@ class Movie(object):
 		self.status= random.choice(["Active","Overloaded","Offline"])
 		return ''.join(self.status)
 	
+
+	
 	def copy_to_servers(self,timestamp_recv):
 		print("Received Timestamp: " , timestamp_recv)
 		print("Stored here timestamp: " , self.timestamp)
@@ -122,17 +125,19 @@ class Movie(object):
 		self.server_with_most_recent_data_pos = timestamp_recv.index(max(timestamp_recv))
 		print("Position of the highest number in the timestamp: " , self.server_with_most_recent_data_pos )
 		print("NOW WE ARE ON SERVER: " , int(self.number)-1)
+		self.counter=self.server_with_most_recent_data
 		for i in range(0,len(timestamp_recv)):
 			if (timestamp_recv == [0,0,0] and i != int(self.number)-1):
 				print("First time but We need an updated version and we will get values from server: ",i)
 				self.get_data_from_server(i)
 				self.timestamp=timestamp_recv
 				break
-			elif (timestamp_recv[i] > self.timestamp[i] and i != int(self.number)-1):
+			elif (self.server_with_most_recent_data > self.timestamp[i] and i ==self.server_with_most_recent_data_pos):
 				print("We need an updated version and we will get values from server: ",i)
 				self.get_data_from_server(i)
 				self.timestamp=timestamp_recv
 				break
+		self.timestamp=timestamp_recv
 		return True
 	
 		
@@ -171,6 +176,7 @@ class Movie(object):
 			if (i[0] == name and i[3] != 'del'):
 				temp_rating.append([i[1],": ",i[2]])
 		res= ' '.join(str(r) for v in temp_rating for r in v)
+		self.set_list = self.set_timestamp_to_servers()
 		return res,self.timestamp
 		
 		
@@ -194,6 +200,7 @@ class Movie(object):
 		self.counter = self.counter + 1
 		self.set_list = self.set_timestamp_to_servers()
 		res= "Successfully changed rating of movie ", movie_to_change," from ", self.rating_to_change, " to ", self.new_rating
+		
 		return res,self.timestamp
 		
 
@@ -201,7 +208,9 @@ class Movie(object):
 		return self.movie_rating_dict.get(str(movie_id))
 
 	def get_rating_by_name(self, name,timestamp_recv):
+		
 		self.copy_to_servers(timestamp_recv)
+		print("DICTIONARYYYYYYY: " , self.rating_tuples)
 		test_list=[]
 		if name not in self.people_dict:
 			return "User not found",self.timestamp
@@ -221,6 +230,7 @@ class Movie(object):
 					if (i[1] == current_movie_selected and i[3] != 'del'):
 						test_list.append(i[2])
 			rating = rating + test_list
+			self.set_list = self.set_timestamp_to_servers()
 			return sorted(rating),self.timestamp
 		else:
 			return None,self.timestamp
@@ -232,11 +242,13 @@ class Movie(object):
 		rating,self.timestamp = self.get_rating_by_name(name,timestamp_recv)
 		print("AVERAGE: ",rating)
 		avg= "Average: " , sum(rating) / len(rating)
+		self.set_list = self.set_timestamp_to_servers()
 		return  avg , self.timestamp
 
 	def add_rating(self, name, rating, timestamp_recv):
 		#self.users_rating_dict.setdefault(key, []).append(value)
 		self.copy_to_servers(timestamp_recv)
+		current_movie_selected=""
 		for key in self.people_dict.keys():
 			if key == name:
 				current_movie_selected = ''.join(self.people_dict[key])
