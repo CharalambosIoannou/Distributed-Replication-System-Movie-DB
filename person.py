@@ -76,6 +76,7 @@ class Person :
 				ns = Pyro4.locateNS()
 				self.server_list = ns.lookup("frontend")
 				actual_server = Pyro4.Proxy(self.server_list)
+				actual_server.get_data_from_client(data_to_send)
 				actual_server.shutdown()
 				actual_server._pyroRelease()
 				return "Exit"

@@ -6,16 +6,18 @@ import random
 class FrontEnd(object):
 	def __init__(self,daemon):
 		self.daemon = daemon
-		
-		if (self.read_file() == ""):
-			print("YES")
+		try:
+			if (self.read_file() == ""):
+				print("YES")
+				self.timestamp = [0,0,0]
+			else:
+				timestamp_in_file=self.read_file()
+				print(timestamp_in_file)
+				my_list = timestamp_in_file.split(",")
+				del my_list[-1]
+				self.timestamp= list(map(int, my_list))
+		except FileNotFoundError:
 			self.timestamp = [0,0,0]
-		else:
-			timestamp_in_file=self.read_file()
-			print(timestamp_in_file)
-			my_list = timestamp_in_file.split(",")
-			del my_list[-1]
-			self.timestamp= list(map(int, my_list))
 		self.counter_server_1 = 0
 		self.counter_server_2 = 0
 		self.counter_server_3 = 0
@@ -150,7 +152,11 @@ class FrontEnd(object):
 			print("TimeStamp received from server: ", self.timestamp)
 			self.write()
 			return str(results)
-			
+		
+		elif request == "EXIT":
+			for i in self.server_list:
+				ser=Pyro4.Proxy(i)
+				ser.shutdown()
 
 		else:
 			return "Command not found. Please try again"

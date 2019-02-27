@@ -3,6 +3,7 @@ import random
 import sys
 from collections import defaultdict
 import Pyro4
+import json
 
 
 
@@ -37,10 +38,24 @@ class Movie(object):
 	server_list = []
 	
 
-	def __init__(self,number):
+	def __init__(self,number,daemon):
+		self.daemon=daemon
+		try:
+			self.rating_tuples , self.people_dict = self.read_file()
+			if (self.people_dict == ""):
+				self.rating_tuples = []
+			else:
+				for i in self.rating_tuples:
+					i[2]=float(i[2])
+		except FileNotFoundError:
+			self.rating_tuples = []
+			
+		print("1: ", self.rating_tuples)
+		print("2: ", self.people_dict)
+			
 		self.status=""
 		self.movie_name = ""
-		self.rating_tuples = []
+		
 		self.movie_name_dict = movie_name_dict1
 		self.movie_rating_dict = movie_rating_dict1
 		self.number=number
@@ -72,7 +87,12 @@ class Movie(object):
 		return self.timestamp
 	
 
-
+	@Pyro4.oneway
+	def shutdown(self):
+		print("Shutting down")
+		self.daemon.shutdown()
+		
+		
 	def get_data_from_server(self,server_number):
 		tmp = {}
 		print("Inside get data funct and the server number is: " , server_number)
@@ -141,6 +161,21 @@ class Movie(object):
 		return True
 	
 		
+	def write(self):
+		with open("tuples.csv", "w",newline="") as f:
+		    writer = csv.writer(f)
+		    writer.writerows(self.rating_tuples)
+		text_file1 = open("people dict.txt", "w")
+		json.dump(self.people_dict,text_file1)
+		
+   
+		
+	def read_file(self):
+		with open("tuples.csv", 'r') as f:
+			data = list(csv.reader(f, delimiter=','))
+		file_read1 = open("people dict.txt", "r")
+		dict = json.load(file_read1)
+		return data , dict
 		
 	""" Movie Functions"""
 	
@@ -166,6 +201,7 @@ class Movie(object):
 				self.movie_name = movie_name
 			self.counter = self.counter + 1
 			self.set_list = self.set_timestamp_to_servers()
+			self.write()
 			return movie_name, self.timestamp
 	
 	def view_rating(self,name,timestamp_recv):
@@ -177,6 +213,7 @@ class Movie(object):
 				temp_rating.append([i[1],": ",i[2]])
 		res= ' '.join(str(r) for v in temp_rating for r in v)
 		self.set_list = self.set_timestamp_to_servers()
+		self.write()
 		return res,self.timestamp
 		
 		
@@ -200,7 +237,7 @@ class Movie(object):
 		self.counter = self.counter + 1
 		self.set_list = self.set_timestamp_to_servers()
 		res= "Successfully changed rating of movie ", movie_to_change," from ", self.rating_to_change, " to ", self.new_rating
-		
+		self.write()
 		return res,self.timestamp
 		
 
@@ -231,6 +268,7 @@ class Movie(object):
 						test_list.append(i[2])
 			rating = rating + test_list
 			self.set_list = self.set_timestamp_to_servers()
+			self.write()
 			return sorted(rating),self.timestamp
 		else:
 			return None,self.timestamp
@@ -243,6 +281,7 @@ class Movie(object):
 		print("AVERAGE: ",rating)
 		avg= "Average: " , sum(rating) / len(rating)
 		self.set_list = self.set_timestamp_to_servers()
+		self.write()
 		return  avg , self.timestamp
 
 	def add_rating(self, name, rating, timestamp_recv):
@@ -266,6 +305,7 @@ class Movie(object):
 				self.counter = self.counter + 1
 				self.set_list = self.set_timestamp_to_servers()
 				print("New updated timestamp below: ", self.timestamp)
+				self.write()
 				return "Successfully added new rating", self.timestamp
 	
 
@@ -274,10 +314,17 @@ def main(server_number):
 	try:
 		daemon = Pyro4.Daemon()
 		ns = Pyro4.locateNS()
-		url = daemon.register(Movie(str(server_number)))
+		m = Movie(str(server_number),daemon)
+		url = daemon.register(m)
 		ns.register("movie_server" + str(server_number), url)
 		print("Listening: " , "movie_server" + str(server_number), url)
 		daemon.requestLoop()
+		print("Exit loop")
+		daemon.close()
+		m.people_dict = {}
+		m.rating_tuples = []
+		m.write()
+		print("Daemon closed")
 	except Pyro4.errors.NamingError:
 		print("Could not find the name server. Please start the server by typing 'pyro4-ns' in the command line")
 		return "Error"
