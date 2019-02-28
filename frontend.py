@@ -1,25 +1,14 @@
 import Pyro4
 from Pyro4.errors import CommunicationError, PyroError
 import random
+from time import sleep
 
 @Pyro4.expose
 class FrontEnd(object):
 	def __init__(self,daemon):
 		self.daemon = daemon
-		try:
-			if (self.read_file() == ""):
-				self.timestamp = [0,0,0]
-			else:
-				timestamp_in_file=self.read_file()
-				print(timestamp_in_file)
-				my_list = timestamp_in_file.split(",")
-				del my_list[-1]
-				self.timestamp= list(map(int, my_list))
-		except FileNotFoundError:
-			self.timestamp = [0,0,0]
-		self.counter_server_1 = 0
-		self.counter_server_2 = 0
-		self.counter_server_3 = 0
+		
+		self.timestamp = [0,0,0]
 		self.server_list=[]
 		self.connected_server_list= []
 		ns = Pyro4.locateNS()
@@ -34,41 +23,50 @@ class FrontEnd(object):
 			self.connected_server_list.append(Pyro4.Proxy(server))
 		for con in self.connected_server_list:
 			con.set_servers(self.server_list)
-			
+	
 
 
 
 	def find_available_server(self):
 		for i in range (0, len(self.server_list)):
-			try:
+			#try:
+			connect_server = Pyro4.Proxy(self.server_list[i])
+			status= connect_server.set_status()
+			print("Status: " , status)
+			print("Using server ", i+1)
+			while (status == "Overloaded" or status == "Offline" ):
+				i=i+1
+				print(i)
+				if (i == 3):
+					print("No servers")
+					i=0
+					self.find_available_server()
+				print("changing server to server: ", i+1)
 				connect_server = Pyro4.Proxy(self.server_list[i])
 				status= connect_server.set_status()
-				print("Status: " , status)
-				print("Using server ", i+1)
-				while (status == "Overloaded" or status == "Offline" ):
-					i=i+1
-					print(i)
-					if (i == 3):
-						print("No servers")
-						i=0
-						self.find_available_server()
-					print("changing server to server: ", i+1)
-					connect_server = Pyro4.Proxy(self.server_list[i])
-					status= connect_server.set_status()
 
-				return connect_server
-			except ConnectionRefusedError:
-				print("Not all servers are active")
-				return
-			except CommunicationError:
-				print("Not all servers are active")
-				return
-			except PyroError:
-				print("Not all servers are active")
-				return
-			except Pyro4.errors.CommunicationError:
-				print("Not all servers are active")
-				return
+			return connect_server
+			# except ConnectionRefusedError:
+			# 	print("Servers are not found. Sleeping for 20 seconds and trying again...")
+			# 	sleep(20)
+			# 	print("Trying to reconnect")
+			# 	self.find_available_server()
+			# except CommunicationError:
+			# 	print("Servers are not found. Sleeping for 20 seconds and trying again...")
+			# 	sleep(20)
+			# 	print("Trying to reconnect")
+			# 	self.find_available_server()
+			# except PyroError:
+			# 	print("Servers are not found. Sleeping for 20 seconds and trying again...")
+			# 	sleep(20)
+			# 	print("Trying to reconnect")
+			# 	self.find_available_server()
+			# except Pyro4.errors.CommunicationError:
+			# 	print("Servers are not found. Sleeping for 20 seconds and trying again...")
+			# 	sleep(20)
+			# 	print("Trying to reconnect")
+			# 	self.find_available_server()
+			# 	#return
 		
 
 	
@@ -170,22 +168,28 @@ class FrontEnd(object):
 		return file_read.read()
 
 def main():
-	try:
-		daemon = Pyro4.Daemon()
-		ns = Pyro4.locateNS()
-		f=FrontEnd(daemon)
-		url = daemon.register(f)
-		ns.register("frontend", url)
-		print("Listening: ",url)
-		daemon.requestLoop()
-		print("Exit loop")
-		daemon.close()
-		f.timestamp=0
-		f.write()
-		print("Daemon closed")
-	except Pyro4.errors.CommunicationError:
-		print("Not all servers are active")
-		return
+	counter =0
+	while counter !=5:
+		try:
+			daemon = Pyro4.Daemon()
+			ns = Pyro4.locateNS()
+			f=FrontEnd(daemon)
+			url = daemon.register(f)
+			ns.register("frontend", url)
+			print("Listening: ",url)
+			daemon.requestLoop()
+			print("Exit loop")
+			daemon.close()
+			f.timestamp=0
+			f.write()
+			print("Daemon closed")
+			break
+		except Pyro4.errors.CommunicationError:
+			print("Attempt ", counter , " out of 5")
+			print("Servers are not found. Sleeping for 10 seconds and trying again...")
+			sleep(10)
+			print("Trying to reconnect")
+			counter = counter + 1
 
 if __name__ == "__main__":
 	main()

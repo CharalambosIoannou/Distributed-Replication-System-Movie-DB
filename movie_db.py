@@ -40,22 +40,22 @@ class Movie(object):
 
 	def __init__(self,number,daemon):
 		self.daemon=daemon
-		try:
-			self.rating_tuples , self.people_dict = self.read_file()
-			if (self.people_dict == ""):
-				self.rating_tuples = []
-			else:
-				for i in self.rating_tuples:
-					i[2]=float(i[2])
-		except FileNotFoundError:
-			self.rating_tuples = []
-			
-		print("1: ", self.rating_tuples)
-		print("2: ", self.people_dict)
-			
+		
+		# try:
+		# 	self.rating_tuples , self.people_dict = self.read_file()
+		# 	if (self.people_dict == ""):
+		# 		self.rating_tuples = []
+		# 	else:
+		# 		for i in self.rating_tuples:
+		# 			i[2]=float(i[2])
+		# except FileNotFoundError:
+		# 	self.rating_tuples = []
+		#
+		# print("1: ", self.rating_tuples)
+		# print("2: ", self.people_dict)
+		self.rating_tuples = []
 		self.status=""
 		self.movie_name = ""
-		
 		self.movie_name_dict = movie_name_dict1
 		self.movie_rating_dict = movie_rating_dict1
 		self.number=number
@@ -96,36 +96,60 @@ class Movie(object):
 	def get_data_from_server(self,server_number):
 		tmp = {}
 		print("Inside get data funct and the server number is: " , server_number)
+		print("SERVER LIST: ", self.server_list)
 		for i in range (0,len(self.server_list)):
 			if (i == int(server_number)):
+				print("SERVER LIST TO I :", self.server_list[i])
 				self.recv_people_dict = self.server_list[i].get_people_from_servers()
 				self.copy_tuples = self.server_list[i].get_rating_tuples()
+				
+		# for k in self.copy_tuples:
+		# 	for l in self.rating_tuples:
+		# 		print("k0: " , k[0])
+		# 		print("l0: " , l[0])
+		# 		print("k1: " , k[1])
+		# 		print("l1: " , l[1])
+		# 		print("k2: " , k[2])
+		# 		if (k[0] == l[0] and k[1] == l[1]):
+		# 			print("Match found")
+		# 			print("testing : ", [k[0],k[1],k[2]])
 				
 		update_elems = [x for x in self.copy_tuples if not x in self.rating_tuples]
 		self.rating_tuples = self.rating_tuples + update_elems
 		
+		print("BEFORE DEL PEOPLE DICT: " , self.rating_tuples)
+		
+		for k in range (0,len(self.rating_tuples)):
+			element1= self.rating_tuples[k]
+			print("element 1 : ", element1)
+			for l in range (1,len(self.rating_tuples)):
+				element2= self.rating_tuples[l]
+				print("element 2[0] : ", element2[0])
+				print("element1[1] : ", element1[0])
+				print("element2[1] : ", element2[1])
+				print("element1[1]: ", element1[1])
+				print("element1[3]  : ", element1[3] )
+				print("element2[3]  : ", element2[3] )
+				
+				if (element2[0] == element1[0] and element2[1] == element1[1] and element2[2] == element1[2] and element1[3] == 'add' and element2[3]=='del'):
+					print("HERE")
+					element1[3]='del'
+		
+		# for k in self.rating_tuples:
+		# 	for l in self.rating_tuples:
+		# 		if (k[0] == l[0] and k[1] == l[1] and l[3] == 'add' and l[3] == 'del'):
+		# 			print("Match found")
+		# 			print("test: " , [k[0],k[1],k[2],'del'])
+					
+					
 		if (len(self.people_dict) == 0):
 			self.people_dict=self.recv_people_dict
 		else:
 			tmp={**self.people_dict,**self.recv_people_dict}
 			self.people_dict = tmp
 		
-		print("BEFORE DEL PEOPLE DICT: " , self.rating_tuples)
-		if (len(self.rating_tuples) != 0):
-			del_elems=[]
-			for j in self.rating_tuples:
-				if (j[3] == 'del'):
-					del_elems.append([j[0],j[1],j[2],'add'])
-
-				
-			print("del elems: " , del_elems)
-			
-			for k in del_elems:
-				if k in self.rating_tuples:
-					self.rating_tuples.remove(k)
-			
-			
 		print("AFTER DEL PEOPLE DICT: " , self.rating_tuples)
+		
 
 		return True
 	
@@ -209,7 +233,7 @@ class Movie(object):
 		temp_rating= []
 		print("These are the your ratings: ")
 		for i in self.rating_tuples:
-			if (i[0] == name and i[3] != 'del'):
+			if (i[0] == name and i[3] !='del'):
 				temp_rating.append([i[1],": ",i[2]])
 		res= ' '.join(str(r) for v in temp_rating for r in v)
 		self.set_list = self.set_timestamp_to_servers()
@@ -219,16 +243,16 @@ class Movie(object):
 		
 	def update_rating(self,name,list_rating,timestamp_recv):
 		movie_to_change=list_rating[0]
-		"""
+
 		for i in self.rating_tuples:
 			print("i1: " , i[1])
 			print("movie_to_change: " , movie_to_change)
 			print("name: " , name)
 			print("i[0]: " , i[0])
-			if (i[1] != movie_to_change and name != i[0]):
+			if (i[1] != movie_to_change):
 				print("here")
 				return "No movie found",self.timestamp
-		"""
+
 		#self.rating_to_change = list_rating[1]
 		self.new_rating = list_rating[1]
 		print("These are the your ratings: ")
@@ -239,20 +263,20 @@ class Movie(object):
 			print("movie_to_change: " , movie_to_change)
 			print("name: " , name)
 			print("i[0]: " , i[0])
-			if (i[0] == name and i[1]==movie_to_change ):
+			if (i[0] == name and i[1]==movie_to_change and i[3] !='del' ):
 				self.rating_to_change = i[2]
-				self.rating_tuples.append([name, i[1], self.rating_to_change ,'del'])
+				self.rating_tuples.append([name, i[1], self.rating_to_change,'del' ])
 				self.rating_tuples[count_in_list] = [name, i[1], self.new_rating,'add']
+				#self.rating_tuples.append([name, i[1], self.new_rating,'add'])
 				
 				#self.rating_tuples.append()
 				break
-			else:
-				return "No movie found",self.timestamp
+
 			count_in_list = count_in_list + 1
 		print("new user rat dict: ",self.rating_tuples)
 		self.counter = self.counter + 1
 		self.set_list = self.set_timestamp_to_servers()
-		res= "Successfully changed rating of movie ", movie_to_change," from ", self.rating_to_change, " to ", self.new_rating
+		res= "Successfully changed rating of movie ", movie_to_change#," from ", self.rating_to_change, " to ", self.new_rating
 		self.write()
 		return res,self.timestamp
 		
@@ -280,7 +304,7 @@ class Movie(object):
 		if id_found != "":
 			rating = (self.get_rating_by_id(str(id_found)))
 			for i in self.rating_tuples:
-					if (i[1] == current_movie_selected and i[3] != 'del'):
+					if (i[1] == current_movie_selected and i[3] !='del'):
 						test_list.append(i[2])
 			rating = rating + test_list
 			self.set_list = self.set_timestamp_to_servers()

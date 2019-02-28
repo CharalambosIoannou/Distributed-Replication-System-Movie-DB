@@ -8,8 +8,22 @@ from time import sleep
 class Person :
 	def __init__(self) :
 		self.user_id = uuid.uuid4()
-		Pyro4.config.MAX_RETRIES = 0
-	
+		counter = 5
+		while counter>0:
+			try:
+				ns = Pyro4.locateNS()
+				self.server_list = ns.lookup("frontend")
+				print("1 ",self.server_list)
+				self.actual_server = Pyro4.Proxy(self.server_list)
+				print("2 ",self.actual_server)
+				break
+			except Pyro4.errors.CommunicationError:
+				print("Attempt ", counter , " out of 5")
+				print("Servers are not found. Sleeping for 10 seconds and trying again...")
+				sleep(10)
+				print("Trying to reconnect")
+				counter = counter + 1
+		
 	
 	def retrieve_rating(self) :
 		option = self.requests("GET_RATING", self.user_id, "")
@@ -68,32 +82,27 @@ class Person :
 	
 	def requests(self, request, user_id, user_inp) :
 		data_to_send = {'request' : request, 'user_id' : user_id, 'user_inp' : user_inp}
-		try :
-			if request != "EXIT":
+		counter = 0
+		while counter != 5:
+			try:
+				if request != "EXIT":
+					return self.actual_server.get_data_from_client(data_to_send)
+				else:
+					self.actual_server.get_data_from_client(data_to_send)
+					self.actual_server.shutdown()
+					self.actual_server._pyroRelease()
+					return "Exit"
+			except Pyro4.errors.CommunicationError:
+				print("Attempt ", counter , " out of 5")
 				ns = Pyro4.locateNS()
 				self.server_list = ns.lookup("frontend")
-				actual_server = Pyro4.Proxy(self.server_list)
-				return actual_server.get_data_from_client(data_to_send)
-			else:
-				ns = Pyro4.locateNS()
-				self.server_list = ns.lookup("frontend")
-				actual_server = Pyro4.Proxy(self.server_list)
-				actual_server.get_data_from_client(data_to_send)
-				actual_server.shutdown()
-				actual_server._pyroRelease()
-				return "Exit"
-		except Pyro4.errors.NamingError :
-			print("Could not find the name server. Please start the server by typing 'pyro4-ns' in the command line")
-			return "Error"
-		except Pyro4.errors.CommunicationError :
-			print("Servers are not found. Sleeping for 20 seconds and trying again...")
-			sleep(20)
-			print("Trying to reconnect")
-			ns = Pyro4.locateNS()
-			self.server_list = ns.lookup("frontend")
+				print("1 ",self.server_list)
+				self.actual_server = Pyro4.Proxy(self.server_list)
+				print("Servers are not found. Sleeping for 10 seconds and trying again...")
+				sleep(10)
+				print("Trying to reconnect")
+				counter = counter + 1
 			
-			actual_server = Pyro4.Proxy(self.server_list)
-			return actual_server.get_data_from_client(data_to_send)
 
 
 def main() :
