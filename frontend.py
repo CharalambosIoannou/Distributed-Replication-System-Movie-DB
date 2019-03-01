@@ -7,8 +7,13 @@ from time import sleep
 class FrontEnd(object):
 	def __init__(self,daemon):
 		self.daemon = daemon
-		
+		self.connect()
 		self.timestamp = [0,0,0]
+		
+		
+	
+
+	def connect(self):
 		self.server_list=[]
 		self.connected_server_list= []
 		ns = Pyro4.locateNS()
@@ -23,9 +28,7 @@ class FrontEnd(object):
 			self.connected_server_list.append(Pyro4.Proxy(server))
 		for con in self.connected_server_list:
 			con.set_servers(self.server_list)
-	
-
-
+		return  True
 
 	def find_available_server(self):
 		for i in range (0, len(self.server_list)):
@@ -153,10 +156,6 @@ class FrontEnd(object):
 		else:
 			return "Command not found. Please try again"
 		
-		
-		
-		
-
 	def write(self):
 		text_file = open("timestamp.txt", "w")
 		for i in self.timestamp:
@@ -186,7 +185,7 @@ def main():
 			break
 		except Pyro4.errors.CommunicationError:
 			print("Attempt ", counter , " out of 5")
-			print("Servers are not found. Sleeping for 10 seconds and trying again...")
+			print("Servers are not found. Sleeping for 10 seconds and trying again1...")
 			sleep(10)
 			print("Trying to reconnect")
 			counter = counter + 1

@@ -2,6 +2,7 @@ import uuid
 import Pyro4
 import Pyro4.errors
 from time import sleep
+import sys
 
 
 
@@ -19,7 +20,13 @@ class Person :
 				break
 			except Pyro4.errors.CommunicationError:
 				print("Attempt ", counter , " out of 5")
-				print("Servers are not found. Sleeping for 10 seconds and trying again...")
+				print("Servers are not found. Sleeping for 10 seconds and trying again12...")
+				sleep(10)
+				print("Trying to reconnect")
+				counter = counter + 1
+			except Pyro4.errors.NamingError:
+				print("Attempt ", counter , " out of 5")
+				print("Frontend are not found. Sleeping for 10 seconds and trying again12...")
 				sleep(10)
 				print("Trying to reconnect")
 				counter = counter + 1
@@ -83,25 +90,32 @@ class Person :
 	def requests(self, request, user_id, user_inp) :
 		data_to_send = {'request' : request, 'user_id' : user_id, 'user_inp' : user_inp}
 		counter = 0
-		while counter != 5:
-			try:
-				if request != "EXIT":
-					return self.actual_server.get_data_from_client(data_to_send)
-				else:
-					self.actual_server.get_data_from_client(data_to_send)
-					self.actual_server.shutdown()
-					self.actual_server._pyroRelease()
-					return "Exit"
+		#while counter != 5:
+		try:
+			if request != "EXIT":
+				return self.actual_server.get_data_from_client(data_to_send)
+			else:
+				self.actual_server.get_data_from_client(data_to_send)
+				self.actual_server.shutdown()
+				self.actual_server._pyroRelease()
+				return "Exit"
+		except Pyro4.errors.ConnectionClosedError:
+			
+			print("Servers are not found. Sleeping for 10 seconds and trying again...")
+			sleep(10)
+			self.actual_server.connect()
+			return self.actual_server.get_data_from_client(data_to_send)
+			"""
 			except Pyro4.errors.CommunicationError:
 				print("Attempt ", counter , " out of 5")
+				print("Servers are not found. Sleeping for 10 seconds and trying again...")
+				sleep(10)
 				ns = Pyro4.locateNS()
 				self.server_list = ns.lookup("frontend")
 				print("1 ",self.server_list)
 				self.actual_server = Pyro4.Proxy(self.server_list)
-				print("Servers are not found. Sleeping for 10 seconds and trying again...")
-				sleep(10)
-				print("Trying to reconnect")
 				counter = counter + 1
+			"""
 			
 
 
