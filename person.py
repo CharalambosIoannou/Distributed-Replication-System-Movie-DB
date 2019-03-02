@@ -15,13 +15,10 @@ class Person :
 			try:
 				ns = Pyro4.locateNS()
 				self.server_list = ns.lookup("frontend")
-				print("1 ",self.server_list)
 				self.actual_server = Pyro4.Proxy(self.server_list)
-				print("2 ",self.actual_server)
 				break
 			except Pyro4.errors.CommunicationError:
 				print( "No fronted server found")
-				#exit()
 				print("Attempt ", counter , " out of 5")
 				print("Servers are not found. Sleeping for 20 seconds and trying again12...")
 				sleep(20)
@@ -32,14 +29,11 @@ class Person :
 				exit()
 			except Pyro4.errors.ConnectionClosedError:
 				print( "No fronted server found")
-				#exit()
-		
 				print("Attempt ", counter , " out of 5")
 				print("Servers are not found. Sleeping for 20 seconds and trying again...")
 				sleep(20)
 				ns = Pyro4.locateNS()
 				self.server_list = ns.lookup("frontend")
-				print("1 ",self.server_list)
 				self.actual_server = Pyro4.Proxy(self.server_list)
 				counter = counter +1
 				self.actual_server.connect()
@@ -62,7 +56,7 @@ class Person :
 	
 	def submit_rating(self) :
 		inp = (input("Enter a rating: "))
-		while (inp == "" or inp <"0" or inp >"5"):
+		while (inp == "" or float(inp) <0 or float(inp) >5):
 			print("Rating should be between 0 and 5")
 			inp = (input("Enter a rating: "))
 		inp = float(inp)
@@ -74,16 +68,22 @@ class Person :
 	
 	def update_rating(self) :
 		inp_movie = input("Enter the movie name that you want to change the rating: ")
-		# inp=float(input("Enter the rating you want to change: "))
-		inp_1 = float(input("Enter the new rating: "))
+		inp_1 = (input("Enter the new rating: "))
+		while (inp_1 == "" or float(inp_1) <0 or float(inp_1) >5):
+			print("Rating should be between 0 and 5")
+			inp_1 = (input("Enter a rating: "))
+		inp_1 = float(inp_1)
 		merged_inp = [inp_movie, inp_1]
 		option = self.requests("UPDATE_RATING", self.user_id, merged_inp)
 		while option == "No movie found" :
 			inp_movie = input("No movie found with this name. Please enter the name of a valid movie: ")
 			merged_inp = [inp_movie, inp_1]
 			option = self.requests("UPDATE_RATING", self.user_id, merged_inp)
-		if option == "Error" :
+		if option == "Error":
 			return "Error"
+		if (option == "No rating added yet"):
+			print("You have to add a rating first")
+			return
 		print(option)
 	
 	
@@ -120,27 +120,21 @@ class Person :
 					return "Exit"
 			except Pyro4.errors.ConnectionClosedError:
 				print( "No fronted server found")
-				#exit()
-		
 				print("Attempt ", counter , " out of 5")
 				print("Servers are not found. Sleeping for 20 seconds and trying again...")
 				sleep(20)
 				ns = Pyro4.locateNS()
 				self.server_list = ns.lookup("frontend")
-				print("1 ",self.server_list)
 				self.actual_server = Pyro4.Proxy(self.server_list)
 				counter = counter +1
 				self.actual_server.connect()
 		
-			
 			except Pyro4.errors.CommunicationError:
-				#exit()
 				print("Attempt ", counter , " out of 5")
 				print("Servers are not found. Sleeping for 20 seconds and trying again...")
 				sleep(20)
 				ns = Pyro4.locateNS()
 				self.server_list = ns.lookup("frontend")
-				print("1 ",self.server_list)
 				self.actual_server = Pyro4.Proxy(self.server_list)
 				counter = counter + 1
 				self.actual_server.connect()
@@ -165,11 +159,11 @@ def main() :
 		print("4. Change current movie")
 		print("5. View your ratings")
 		print("6. Update an existing rating")
+		print("0. Close all active connections and terminals")
 		user_inp = input("Select an option of what would you like to do: ")
 		while user_inp not in inp_options or user_inp == '' :
 			print("Enter valid number")
 			user_inp = input("Select an option of what would you like to do: ")
-		
 		if user_inp == '0' :
 			print("Thank you come again")
 			option = person.requests("EXIT", person.user_id, "")

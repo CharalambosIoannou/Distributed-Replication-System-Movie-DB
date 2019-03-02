@@ -30,7 +30,6 @@ class FrontEnd(object):
 		self.server_list.append(self.server_1)
 		self.server_list.append(self.server_2)
 		self.server_list.append(self.server_3)
-	
 		
 		for server in self.server_list:
 			self.connected_server_list.append(Pyro4.Proxy(server))
@@ -58,28 +57,6 @@ class FrontEnd(object):
 				status= connect_server.set_status()
 
 			return connect_server
-			# except ConnectionRefusedError:
-			# 	print("Servers are not found. Sleeping for 20 seconds and trying again...")
-			# 	sleep(20)
-			# 	print("Trying to reconnect")
-			# 	self.find_available_server()
-			# except CommunicationError:
-			# 	print("Servers are not found. Sleeping for 20 seconds and trying again...")
-			# 	sleep(20)
-			# 	print("Trying to reconnect")
-			# 	self.find_available_server()
-			# except PyroError:
-			# 	print("Servers are not found. Sleeping for 20 seconds and trying again...")
-			# 	sleep(20)
-			# 	print("Trying to reconnect")
-			# 	self.find_available_server()
-			# except Pyro4.errors.CommunicationError:
-			# 	print("Servers are not found. Sleeping for 20 seconds and trying again...")
-			# 	sleep(20)
-			# 	print("Trying to reconnect")
-			# 	self.find_available_server()
-			# 	#return
-		
 
 	
 	@Pyro4.oneway
@@ -93,36 +70,30 @@ class FrontEnd(object):
 		userid = data['user_id']
 		movie=data['movie_name']
 
-		print("com ", request)
-		print("inp ", user_inp)
-		print("user ", userid)
-
-		if not userid:
-			return "No USERID specified"
+		#These are the request the user can perform
 		
 		if request == "ADD_RATING":
-			print("Running ADD RATING Function Frontend")
-			query= True
+			print("Currently ADDING a new rating")
 			results, time = self.find_available_server().add_rating(userid, user_inp,self.timestamp,movie)
-			print("Frontend results: ", results)
+			print("Server response: ", results)
 			self.timestamp=time
 			print("TimeStamp received from server: ", self.timestamp)
 			self.write()
 			return str(results)
 
 		elif request == "GET_RATING":
-			print("Running GET RATING Function Frontend")
+			print("Currently GETING rating")
 			results, time2 = self.find_available_server().get_rating_by_name(userid,self.timestamp,movie)
-			print("Frontend results: ", results)
+			print("Server response: ", results)
 			self.timestamp=time2
 			print("TimeStamp received from server: ", self.timestamp)
 			self.write()
 			return str(results)
 		
 		elif request == "VIEW_RATING":
-			print("Running VIEW RATING Function Frontend")
+			print("Currently VIEWING rating")
 			results, time4 = self.find_available_server().view_rating(userid,self.timestamp,movie)
-			print("Frontend results: ", results)
+			print("Server response: ", results)
 			self.timestamp=time4
 			print("TimeStamp received from server: ", self.timestamp)
 			self.write()
@@ -130,28 +101,27 @@ class FrontEnd(object):
 		
 	
 		elif request == "GET_AVG":
-			print("Running GET AVG Function Frontend")
+			print("Currently GETING AVERAGE rating")
 			results, time3 = self.find_available_server().get_average_rating(userid,self.timestamp,movie)
-			print("Frontend results: ", results)
+			print("Server response: ", results)
 			self.timestamp=time3
 			print("TimeStamp received from server: ", self.timestamp)
 			self.write()
 			return str(results)
 
 		elif request == "SET_MOVIE":
-			print("Setting movie frontend")
+			print("Currently SETTING a movie")
 			results, time1 = self.find_available_server().set_movie(userid, user_inp,self.timestamp)
-			
-			print("Frontend results: ", results)
+			print("Server response: ", results)
 			self.timestamp=time1
 			print("TimeStamp received from server: ", self.timestamp)
 			self.write()
 			return str(results)
 		
 		elif request == "UPDATE_RATING":
-			print("Running UPDATE RATING Function Frontend")
+			print("Currently UPDATING a rating")
 			results, time5 = self.find_available_server().update_rating(userid, user_inp,self.timestamp,movie)
-			print("Frontend results: ", results)
+			print("Server response: ", results)
 			self.timestamp=time5
 			print("TimeStamp received from server: ", self.timestamp)
 			self.write()
@@ -161,9 +131,8 @@ class FrontEnd(object):
 			for i in self.server_list:
 				ser=Pyro4.Proxy(i)
 				ser.shutdown()
-
 		else:
-			return "Command not found. Please try again"
+			return "No such command"
 		
 	def write(self):
 		text_file = open("timestamp.txt", "w")
