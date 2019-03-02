@@ -9,8 +9,9 @@ import sys
 class Person :
 	def __init__(self) :
 		self.user_id = uuid.uuid4()
-		counter = 5
-		while counter>0:
+		self.movie_name=""
+		counter = 1
+		while counter!=5:
 			try:
 				ns = Pyro4.locateNS()
 				self.server_list = ns.lookup("frontend")
@@ -19,17 +20,30 @@ class Person :
 				print("2 ",self.actual_server)
 				break
 			except Pyro4.errors.CommunicationError:
+				print( "No fronted server found")
+				#exit()
 				print("Attempt ", counter , " out of 5")
-				print("Servers are not found. Sleeping for 10 seconds and trying again12...")
-				sleep(10)
-				print("Trying to reconnect")
+				print("Servers are not found. Sleeping for 20 seconds and trying again12...")
+				sleep(20)
 				counter = counter + 1
+			
 			except Pyro4.errors.NamingError:
+				print("Name server could not found. Start name server by opening a terminal and typing 'pyro4-ns'..")
+				exit()
+			except Pyro4.errors.ConnectionClosedError:
+				print( "No fronted server found")
+				#exit()
+		
 				print("Attempt ", counter , " out of 5")
-				print("Frontend are not found. Sleeping for 10 seconds and trying again12...")
-				sleep(10)
-				print("Trying to reconnect")
-				counter = counter + 1
+				print("Servers are not found. Sleeping for 20 seconds and trying again...")
+				sleep(20)
+				ns = Pyro4.locateNS()
+				self.server_list = ns.lookup("frontend")
+				print("1 ",self.server_list)
+				self.actual_server = Pyro4.Proxy(self.server_list)
+				counter = counter +1
+				self.actual_server.connect()
+				
 		
 	
 	def retrieve_rating(self) :
@@ -47,7 +61,11 @@ class Person :
 	
 	
 	def submit_rating(self) :
-		inp = float(input("Enter a rating: "))
+		inp = (input("Enter a rating: "))
+		while (inp == "" or inp <"0" or inp >"5"):
+			print("Rating should be between 0 and 5")
+			inp = (input("Enter a rating: "))
+		inp = float(inp)
 		option = self.requests("ADD_RATING", self.user_id, inp)
 		if option == "Error" :
 			return "Error"
@@ -84,38 +102,53 @@ class Person :
 			option = self.requests("SET_MOVIE", self.user_id, inp)
 		if option == "Error" :
 			return "Error"
+		self.movie_name=option
 		print(option)
 	
 	
 	def requests(self, request, user_id, user_inp) :
-		data_to_send = {'request' : request, 'user_id' : user_id, 'user_inp' : user_inp}
-		counter = 0
-		#while counter != 5:
-		try:
-			if request != "EXIT":
-				return self.actual_server.get_data_from_client(data_to_send)
-			else:
-				self.actual_server.get_data_from_client(data_to_send)
-				self.actual_server.shutdown()
-				self.actual_server._pyroRelease()
-				return "Exit"
-		except Pyro4.errors.ConnectionClosedError:
-			
-			print("Servers are not found. Sleeping for 10 seconds and trying again...")
-			sleep(10)
-			self.actual_server.connect()
-			return self.actual_server.get_data_from_client(data_to_send)
-			"""
-			except Pyro4.errors.CommunicationError:
+		data_to_send = {'request' : request, 'user_id' : user_id, 'user_inp' : user_inp, 'movie_name' : self.movie_name }
+		counter = 1
+		while counter != 5:
+			try:
+				if request != "EXIT":
+					return self.actual_server.get_data_from_client(data_to_send)
+				else:
+					self.actual_server.get_data_from_client(data_to_send)
+					self.actual_server.shutdown()
+					self.actual_server._pyroRelease()
+					return "Exit"
+			except Pyro4.errors.ConnectionClosedError:
+				print( "No fronted server found")
+				#exit()
+		
 				print("Attempt ", counter , " out of 5")
-				print("Servers are not found. Sleeping for 10 seconds and trying again...")
-				sleep(10)
+				print("Servers are not found. Sleeping for 20 seconds and trying again...")
+				sleep(20)
+				ns = Pyro4.locateNS()
+				self.server_list = ns.lookup("frontend")
+				print("1 ",self.server_list)
+				self.actual_server = Pyro4.Proxy(self.server_list)
+				counter = counter +1
+				self.actual_server.connect()
+		
+			
+			except Pyro4.errors.CommunicationError:
+				#exit()
+				print("Attempt ", counter , " out of 5")
+				print("Servers are not found. Sleeping for 20 seconds and trying again...")
+				sleep(20)
 				ns = Pyro4.locateNS()
 				self.server_list = ns.lookup("frontend")
 				print("1 ",self.server_list)
 				self.actual_server = Pyro4.Proxy(self.server_list)
 				counter = counter + 1
-			"""
+				self.actual_server.connect()
+			#return self.actual_server.get_data_from_client(data_to_send)
+		print("No connection could be established")
+		exit()
+
+			
 			
 
 
@@ -129,7 +162,7 @@ def main() :
 		print("1. Get a movie rating")
 		print("2. Add a movie rating")
 		print("3. Get a movie average rating")
-		print("4. Set a new movie")
+		print("4. Change current movie")
 		print("5. View your ratings")
 		print("6. Update an existing rating")
 		user_inp = input("Select an option of what would you like to do: ")

@@ -7,11 +7,18 @@ from time import sleep
 class FrontEnd(object):
 	def __init__(self,daemon):
 		self.daemon = daemon
+		try:
+			if (self.read_file() == ""):
+				self.timestamp = [0,0,0]
+			else:
+				timestamp_in_file=self.read_file()
+				print(timestamp_in_file)
+				my_list = timestamp_in_file.split(",")
+				del my_list[-1]
+				self.timestamp= list(map(int, my_list))
+		except FileNotFoundError:
+			self.timestamp = [0,0,0]
 		self.connect()
-		self.timestamp = [0,0,0]
-		
-		
-	
 
 	def connect(self):
 		self.server_list=[]
@@ -23,9 +30,11 @@ class FrontEnd(object):
 		self.server_list.append(self.server_1)
 		self.server_list.append(self.server_2)
 		self.server_list.append(self.server_3)
+	
 		
 		for server in self.server_list:
 			self.connected_server_list.append(Pyro4.Proxy(server))
+			Pyro4.Proxy(server).empty_servers()
 		for con in self.connected_server_list:
 			con.set_servers(self.server_list)
 		return  True
@@ -82,7 +91,7 @@ class FrontEnd(object):
 		request = data['request']
 		user_inp = data['user_inp']
 		userid = data['user_id']
-		query=False
+		movie=data['movie_name']
 
 		print("com ", request)
 		print("inp ", user_inp)
@@ -94,7 +103,7 @@ class FrontEnd(object):
 		if request == "ADD_RATING":
 			print("Running ADD RATING Function Frontend")
 			query= True
-			results, time = self.find_available_server().add_rating(userid, user_inp,self.timestamp)
+			results, time = self.find_available_server().add_rating(userid, user_inp,self.timestamp,movie)
 			print("Frontend results: ", results)
 			self.timestamp=time
 			print("TimeStamp received from server: ", self.timestamp)
@@ -103,7 +112,7 @@ class FrontEnd(object):
 
 		elif request == "GET_RATING":
 			print("Running GET RATING Function Frontend")
-			results, time2 = self.find_available_server().get_rating_by_name(userid,self.timestamp)
+			results, time2 = self.find_available_server().get_rating_by_name(userid,self.timestamp,movie)
 			print("Frontend results: ", results)
 			self.timestamp=time2
 			print("TimeStamp received from server: ", self.timestamp)
@@ -112,7 +121,7 @@ class FrontEnd(object):
 		
 		elif request == "VIEW_RATING":
 			print("Running VIEW RATING Function Frontend")
-			results, time4 = self.find_available_server().view_rating(userid,self.timestamp)
+			results, time4 = self.find_available_server().view_rating(userid,self.timestamp,movie)
 			print("Frontend results: ", results)
 			self.timestamp=time4
 			print("TimeStamp received from server: ", self.timestamp)
@@ -122,7 +131,7 @@ class FrontEnd(object):
 	
 		elif request == "GET_AVG":
 			print("Running GET AVG Function Frontend")
-			results, time3 = self.find_available_server().get_average_rating(userid,self.timestamp)
+			results, time3 = self.find_available_server().get_average_rating(userid,self.timestamp,movie)
 			print("Frontend results: ", results)
 			self.timestamp=time3
 			print("TimeStamp received from server: ", self.timestamp)
@@ -141,7 +150,7 @@ class FrontEnd(object):
 		
 		elif request == "UPDATE_RATING":
 			print("Running UPDATE RATING Function Frontend")
-			results, time5 = self.find_available_server().update_rating(userid, user_inp,self.timestamp)
+			results, time5 = self.find_available_server().update_rating(userid, user_inp,self.timestamp,movie)
 			print("Frontend results: ", results)
 			self.timestamp=time5
 			print("TimeStamp received from server: ", self.timestamp)
