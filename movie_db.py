@@ -4,6 +4,7 @@ import sys
 from collections import defaultdict
 import Pyro4
 import json
+import time
 
 
 
@@ -60,13 +61,69 @@ class Movie(object):
 		self.number=number
 		self.counter = 0
 		self.timestamp = [0,0,0]
+		self.org_time=time.time()
 
 		
 	""" Server Functions"""
 	def empty_servers(self):
 		self.server_list = []
 		
+	def gossip(self,timestamp_recv):
+		new_time=time.time()
+		diff = int(new_time - self.org_time)
+		print("DIFF: ", diff)
+		active_servers=[]
+		goss = False
+		print("Received Timestamp: " , timestamp_recv)
+		print("Stored here timestamp: " , self.timestamp)
+		self.server_with_most_recent_data = max(timestamp_recv)
+		self.server_with_most_recent_data_pos = timestamp_recv.index(max(timestamp_recv))
+		print("Position of the highest number in the timestamp: " , self.server_with_most_recent_data_pos )
+		print("NOW WE ARE ON SERVER: " , int(self.number)-1)
+		attempts=0
+		is_active=False
+		for i in range (0,len(self.server_list)):
+			if (i == self.server_with_most_recent_data_pos):
+				while (is_active == False):
+					if (attempts==10):
+						print("No updates received")
+						
+						return "No updates received"
+					else:
+						self.server_list[i].set_status()
+						print("new stat: ",self.server_list[i].get_status())
+						if (self.server_list[i].get_status() != "Offline"):
+							self.counter=self.server_with_most_recent_data
+							is_active=True
+						else:
+							attempts = attempts + 1
+
+		for i in range(0,len(timestamp_recv)):
+			if (timestamp_recv == [0,0,0] and i != int(self.number)-1 and diff %2 == 0):
+				print("GOSSIP TIME")
+				print("First time but We need an updated version and we will get values from server: ",i)
+				self.get_data_from_server(i)
+				self.timestamp=timestamp_recv
+				goss=True
+				break
+			elif (i ==self.server_with_most_recent_data_pos and diff %2 == 0):
+				"""self.server_with_most_recent_data > self.timestamp[i] and """
+				print("GOSSIP TIME")
+				print("We need an updated version and we will get values from server: ",i)
+				self.get_data_from_server(i)
+				self.timestamp=timestamp_recv
+				goss=True
+				break
+			else:
+				print("No updates received")
+				self.timestamp=timestamp_recv
+				goss=False
+			
+		if (goss == False):
+			return "No updates received"
 		
+		
+			
 	def set_servers(self, server_list):
 		for s in server_list:
 			self.server_list.append(Pyro4.Proxy(s))
@@ -140,7 +197,6 @@ class Movie(object):
 		self.server_with_most_recent_data_pos = timestamp_recv.index(max(timestamp_recv))
 		print("Position of the highest number in the timestamp: " , self.server_with_most_recent_data_pos )
 		print("NOW WE ARE ON SERVER: " , int(self.number)-1)
-		
 		attempts=0
 		is_active=False
 		for i in range (0,len(self.server_list)):
@@ -189,6 +245,12 @@ class Movie(object):
 		file_read1 = open("people dict.txt", "r")
 		dict = json.load(file_read1)
 		return data , dict
+	
+	
+	def timer(self,timestamp_recv):
+		while True:
+			self.copy_to_servers(timestamp_recv)
+			
 		
 	""" Movie Functions"""
 	
@@ -228,7 +290,7 @@ class Movie(object):
 			res="No ratings added by this user"
 		else:
 			res= ' '.join(str(r) for v in temp_rating for r in v)
-		#self.set_list = self.set_timestamp_to_servers()
+		self.set_list = self.set_timestamp_to_servers()
 		self.write()
 		return res,self.timestamp
 		
@@ -277,14 +339,16 @@ class Movie(object):
 
 	def get_rating_by_name(self, name,timestamp_recv,movie):
 		print("COUNTER BEF: ", self.counter)
-		self.copy_to_servers(timestamp_recv)
+		#self.copy_to_servers(timestamp_recv)
 		print("COUNTER AFT: ", self.counter)
+		gos = self.gossip(timestamp_recv)
+		if (gos != "No updates received"):
+			self.set_list = self.set_timestamp_to_servers()
+		
 		test_list=[]
 		if name not in self.people_dict:
 			self.people_dict[name] = [movie]
-			
 		current_movie_selected = movie
-			
 		print(name, " made a request to get the rating for the movie ", current_movie_selected)
 		id_found = ""
 		for movie in self.movie_rating_dict:
@@ -296,7 +360,6 @@ class Movie(object):
 					if (i[1] == current_movie_selected and i[3] !='del'):
 						test_list.append(i[2])
 			rating = rating + test_list
-			#self.set_list = self.set_timestamp_to_servers()
 			self.write()
 			return sorted(rating),self.timestamp
 		else:
@@ -310,7 +373,7 @@ class Movie(object):
 		rating,self.timestamp = self.get_rating_by_name(name,timestamp_recv,movie)
 		print("AVERAGE: ",rating)
 		avg= "Average: " , sum(rating) / len(rating)
-		#self.set_list = self.set_timestamp_to_servers()
+		self.set_list = self.set_timestamp_to_servers()
 		self.write()
 		return  avg , self.timestamp
 
