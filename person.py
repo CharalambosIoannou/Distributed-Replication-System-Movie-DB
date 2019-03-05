@@ -8,6 +8,7 @@ import sys
 
 class Person :
 	def __init__(self) :
+		#connect to the front end server
 		self.user_id = uuid.uuid4()
 		self.movie_name=""
 		counter = 1
@@ -20,7 +21,7 @@ class Person :
 			except Pyro4.errors.CommunicationError:
 				print( "No fronted server found")
 				print("Attempt ", counter , " out of 5")
-				print("Servers are not found. Sleeping for 20 seconds and trying again12...")
+				print("Servers are not found. Sleeping for 20 seconds and trying again...")
 				sleep(20)
 				counter = counter + 1
 			
@@ -105,7 +106,7 @@ class Person :
 		self.movie_name=option
 		print(option)
 	
-	
+	#this function is called for every client request and this is the case in order to sent the data to the front end
 	def requests(self, request, user_id, user_inp) :
 		data_to_send = {'request' : request, 'user_id' : user_id, 'user_inp' : user_inp, 'movie_name' : self.movie_name }
 		counter = 1

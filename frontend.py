@@ -5,6 +5,8 @@ from time import sleep
 
 @Pyro4.expose
 class FrontEnd(object):
+	#Read the timestamp from file for robustness.
+	#If there is no file or the file is empty then the timestamp is initialized to [0,0,0]
 	def __init__(self,daemon):
 		self.daemon = daemon
 		try:
@@ -20,6 +22,7 @@ class FrontEnd(object):
 			self.timestamp = [0,0,0]
 		self.connect()
 
+	#call this function to find and connect to the movie servers. This is done at the constructor in the beginning and every time a server force closes
 	def connect(self):
 		self.server_list=[]
 		self.connected_server_list= []
@@ -38,6 +41,7 @@ class FrontEnd(object):
 			con.set_servers(self.server_list)
 		return  True
 
+	#this function finds an available server. It iterates through the list of serves and checks their status. If it finds a server that is active it connects to it
 	def find_available_server(self):
 		for i in range (0, len(self.server_list)):
 			#try:
@@ -45,11 +49,11 @@ class FrontEnd(object):
 			status= connect_server.set_status()
 			print("Status: " , status)
 			print("Using server ", i+1)
-			while (status == "Overloaded" or status == "Offline" ):
+			while (status == "Overloaded" or status == "Offline" ): #iterates throgh the list for as long as it finds a server that is active.
 				i=i+1
 				print(i)
 				if (i == 3):
-					print("No servers")
+					print("No active servers found") #if no server is found to be active then the statuses are changed arbitralily again until one server is active
 					i=0
 					self.find_available_server()
 				print("changing server to server: ", i+1)
@@ -58,19 +62,20 @@ class FrontEnd(object):
 
 			return connect_server
 
-	
+	#this function shuts down the front end server
 	@Pyro4.oneway
 	def shutdown(self):
 		print("Shutting down")
 		self.daemon.shutdown()
 		
 	def get_data_from_client(self, data):
+		#these data are received from the client
 		request = data['request']
 		user_inp = data['user_inp']
 		userid = data['user_id']
 		movie=data['movie_name']
 
-		#These are the request the user can perform
+		#These are the requests the user can perform and are sent to the servers
 		
 		if request == "ADD_RATING":
 			print("Currently ADDING a new rating")

@@ -7,7 +7,7 @@ import json
 import time
 
 
-
+#Read the CSV files and place them in a dictionary
 movie_name_dict1 = {}
 movie_rating_dict1 = {}
 with open('movies.csv', encoding="utf8") as csv_file:
@@ -38,7 +38,9 @@ class Movie(object):
 	people_dict = {}
 	server_list = []
 	
-
+	#In order to make the system robust i read data (list and dictionary) from file in case the servers closed unexpectedly
+	#If there are no files or the files are empty then the list and dictionary are initialized to be empty
+	#If the files are found and have data in them then the list and dictionary are set to be the values that i read from the text and csv files
 	def __init__(self,number,daemon):
 		self.daemon=daemon
 		try:
@@ -65,9 +67,13 @@ class Movie(object):
 
 		
 	""" Server Functions"""
+	#This function empties the list of connected servers. This is the case when the servers are force closed and then re opened.
+	#If they are reopened then they have a different pyro object. So i empty the existing list and update it with the new Pyro object
 	def empty_servers(self):
 		self.server_list = []
 		
+	#This fucntion sends gossip to the server that the client is connected to. It is used for querries only. It sends gossip only if the time difference between
+	#the start time of the server and the current time is an even number. This happends because gossip architecure sends updates periodically and not every time
 	def gossip(self,timestamp_recv):
 		new_time=time.time()
 		diff = int(new_time - self.org_time)
@@ -76,7 +82,7 @@ class Movie(object):
 		goss = False
 		print("Received Timestamp: " , timestamp_recv)
 		print("Stored here timestamp: " , self.timestamp)
-		self.server_with_most_recent_data = max(timestamp_recv)
+		self.server_with_most_recent_data = max(timestamp_recv) #gets data from the server that has the most updates
 		self.server_with_most_recent_data_pos = timestamp_recv.index(max(timestamp_recv))
 		print("Position of the highest number in the timestamp: " , self.server_with_most_recent_data_pos )
 		print("NOW WE ARE ON SERVER: " , int(self.number)-1)
@@ -85,21 +91,21 @@ class Movie(object):
 		for i in range (0,len(self.server_list)):
 			if (i == self.server_with_most_recent_data_pos):
 				while (is_active == False):
-					if (attempts==10):
-						print("No updates received")
+					if (attempts==10): #attempt to reconnect to the server with the most updates 10 times by changing the status of the server arbitralily 10 times
+						print("No updates received") #status is offline for 10 times so no updates are sent/received
 						
 						return "No updates received"
 					else:
 						self.server_list[i].set_status()
 						print("new stat: ",self.server_list[i].get_status())
-						if (self.server_list[i].get_status() != "Offline"):
+						if (self.server_list[i].get_status() != "Offline"): #get data only if the server is active or overloaded. If its offline then no data are send
 							self.counter=self.server_with_most_recent_data
 							is_active=True
 						else:
 							attempts = attempts + 1
 
 		for i in range(0,len(timestamp_recv)):
-			if (timestamp_recv == [0,0,0] and i != int(self.number)-1 and diff %2 == 0):
+			if (timestamp_recv == [0,0,0] and i != int(self.number)-1 and diff %2 == 0): #if the difference of the two times are an even number then the updates are sent. This is the case because i send data periodically
 				print("GOSSIP TIME")
 				print("First time but We need an updated version and we will get values from server: ",i)
 				self.get_data_from_server(i)
@@ -123,12 +129,12 @@ class Movie(object):
 			return "No updates received"
 		
 		
-			
+	#Insert the connected servers in a list in order to iterate through them later on and get the most recent updates and also their status
 	def set_servers(self, server_list):
 		for s in server_list:
 			self.server_list.append(Pyro4.Proxy(s))
 			
-
+	#These are get and set methods where many variables are assigned values and i can access those values from the frontend file or the server file
 	def get_people_from_servers(self):
 		return self.people_dict
 		
@@ -145,13 +151,13 @@ class Movie(object):
 		self.timestamp[int(self.number)-1]=self.get_counter()
 		return self.timestamp
 	
-
+	#this function shuts down the server. This is done in order to have a clean shutdown of the servers, get out of the daemon request loop and empty the files that i use to store data for backup purposes in case a server closes down unexpectedly
 	@Pyro4.oneway
 	def shutdown(self):
 		print("Shutting down")
 		self.daemon.shutdown()
 		
-		
+	#this function gets data from the server that has the most updates
 	def get_data_from_server(self,server_number):
 		tmp = {}
 		print("Inside get data funct and the server number is: " , server_number)
@@ -161,9 +167,11 @@ class Movie(object):
 				self.recv_people_dict = self.server_list[i].get_people_from_servers()
 				self.copy_tuples = self.server_list[i].get_rating_tuples()
 				
+		#i join the list that the server aldready has with the list that i receive from the server with the most updates. If the data are alraedy in the list then they are not added again
 		update_elems = [x for x in self.copy_tuples if not x in self.rating_tuples]
 		self.rating_tuples = self.rating_tuples + update_elems
 		
+		#here i find the rating that the user changed and change its value to del so that it is not displayed to the user when the ratings are requested
 		for k in range (0,len(self.rating_tuples)):
 			element1= self.rating_tuples[k]
 			for l in range (1,len(self.rating_tuples)):
@@ -174,7 +182,7 @@ class Movie(object):
 		if (len(self.people_dict) == 0):
 			self.people_dict=self.recv_people_dict
 		else:
-			tmp={**self.people_dict,**self.recv_people_dict}
+			tmp={**self.people_dict,**self.recv_people_dict} #here i join the dicitonary that i receive from the server with the most updates with the dictionary that is already found in the current server
 			self.people_dict = tmp
 		
 		print("AFTER DEL PEOPLE DICT: " , self.rating_tuples)
@@ -183,12 +191,14 @@ class Movie(object):
 	def get_status(self):
 		return self.status
 	
+	#setting the status of the server arbitralily. I choose a status at random from the list
 	def set_status(self):
 		self.status= random.choice(["Active","Overloaded","Offline"])
 		return ''.join(self.status)
 	
 
-	
+	#This fucntion sends gossip to the server that the client is connected to. It is used for updates only. It sends forced updates
+	#This is done for updates so that the user can update data instalty without waiting for gossip
 	def copy_to_servers(self,timestamp_recv):
 		active_servers=[]
 		print("Received Timestamp: " , timestamp_recv)
@@ -229,7 +239,7 @@ class Movie(object):
 		self.timestamp=timestamp_recv
 		return True
 	
-		
+	#i write data to file for backup purposes if a server force closes unexpectetly
 	def write(self):
 		with open("tuples.csv", "w",newline="") as f:
 		    writer = csv.writer(f)
@@ -246,17 +256,15 @@ class Movie(object):
 		dict = json.load(file_read1)
 		return data , dict
 	
+
 	
-	def timer(self,timestamp_recv):
-		while True:
-			self.copy_to_servers(timestamp_recv)
-			
-		
 	""" Movie Functions"""
+	
 	
 	def get_movie_name_by_id(self, movie_id):
 		return self.movie_name_dict.get(str(movie_id))
-
+	
+	#User sets a movie. Either for the first time or changes the existing movie
 	def set_movie(self, name, movie_name,timestamp_recv):
 		self.copy_to_servers(timestamp_recv)
 		if (movie_name not in self.movie_name_dict.values()):
@@ -278,9 +286,13 @@ class Movie(object):
 			self.set_list = self.set_timestamp_to_servers()
 			self.write()
 			return movie_name, self.timestamp
+		
 	
 	def view_rating(self,name,timestamp_recv,movie):
-		self.copy_to_servers(timestamp_recv)
+		#self.copy_to_servers(timestamp_recv)
+		gos = self.gossip(timestamp_recv)
+		if (gos != "No updates received"):
+			self.set_list = self.set_timestamp_to_servers()
 		temp_rating= []
 		print("These are the your ratings: ")
 		for i in self.rating_tuples:
@@ -294,8 +306,9 @@ class Movie(object):
 		self.write()
 		return res,self.timestamp
 		
-		
+	#change an existing rating that a user inputed
 	def update_rating(self,name,list_rating,timestamp_recv,movie):
+		self.copy_to_servers(timestamp_recv)
 		movie_to_change=list_rating[0]
 		movie_exists=False
 		view_rat , time=self.view_rating(name,timestamp_recv,movie)
@@ -338,9 +351,6 @@ class Movie(object):
 		return self.movie_rating_dict.get(str(movie_id))
 
 	def get_rating_by_name(self, name,timestamp_recv,movie):
-		print("COUNTER BEF: ", self.counter)
-		#self.copy_to_servers(timestamp_recv)
-		print("COUNTER AFT: ", self.counter)
 		gos = self.gossip(timestamp_recv)
 		if (gos != "No updates received"):
 			self.set_list = self.set_timestamp_to_servers()
@@ -366,7 +376,10 @@ class Movie(object):
 			return None,self.timestamp
 
 	def get_average_rating(self, name,timestamp_recv,movie):
-		self.copy_to_servers(timestamp_recv)
+		#self.copy_to_servers(timestamp_recv)
+		gos = self.gossip(timestamp_recv)
+		if (gos != "No updates received"):
+			self.set_list = self.set_timestamp_to_servers()
 		if name not in self.people_dict:
 			self.people_dict[name] = [movie]
 			#return "User not found"
@@ -407,7 +420,7 @@ def main(server_number):
 		ns.register("movie_server" + str(server_number), url)
 		print("Listening: " , "movie_server" + str(server_number), url)
 		daemon.requestLoop()
-		print("Exit loop")
+		print("Exit loop") #when the client disconnectes the files that the data are saved to are cleared
 		daemon.close()
 		m.people_dict = {}
 		m.rating_tuples = []
