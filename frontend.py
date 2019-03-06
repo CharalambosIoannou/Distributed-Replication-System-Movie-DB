@@ -9,6 +9,7 @@ class FrontEnd(object):
 	#If there is no file or the file is empty then the timestamp is initialized to [0,0,0]
 	def __init__(self,daemon):
 		self.daemon = daemon
+		
 		try:
 			if (self.read_file() == ""):
 				self.timestamp = [0,0,0]
@@ -132,10 +133,20 @@ class FrontEnd(object):
 			self.write()
 			return str(results)
 		
+			"""
+		elif request == "CLOSE":
+			temp=self.timestamp
+			self.timestamp=""
+			self.write()
+			self.timestamp=temp
+			results = self.find_available_server().clear_files()
+			"""
+		
 		elif request == "EXIT":
 			for i in self.server_list:
 				ser=Pyro4.Proxy(i)
 				ser.shutdown()
+		
 		else:
 			return "No such command"
 		

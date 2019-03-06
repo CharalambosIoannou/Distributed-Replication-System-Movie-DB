@@ -256,7 +256,14 @@ class Movie(object):
 		dict = json.load(file_read1)
 		return data , dict
 	
-
+	"""
+	def clear_files(self):
+		self.people_dict = {}
+		self.rating_tuples = []
+		self.write()
+		return "Files Cleared"
+	"""
+	
 	
 	""" Movie Functions"""
 	

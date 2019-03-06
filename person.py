@@ -153,7 +153,7 @@ class Person :
 
 
 def main() :
-	inp_options = ['0', '1', '2', '3', '4', '5', '6']
+	inp_options = ['0', '1', '2', '3', '4', '5', '6','100']
 	person = Person()
 	print("Hello,", person.user_id)
 	if person.set_movie_name() == "Error" :
@@ -165,13 +165,14 @@ def main() :
 		print("4. Change current movie")
 		print("5. View your ratings")
 		print("6. Update an existing rating")
-		print("0. Close all active connections and terminals")
+		print("0. Close current client connection")
+		print("100. Close all active servers (Use only in ONE client at the very end when you need to close everything.)")
 		user_inp = input("Select an option of what would you like to do: ")
 		while user_inp not in inp_options or user_inp == '' :
 			print("Enter valid number")
 			user_inp = input("Select an option of what would you like to do: ")
-		if user_inp == '0' :
-			print("Thank you come again")
+		if user_inp == '100' :
+			print("Terminating Connection and closing everything.")
 			option = person.requests("EXIT", person.user_id, "")
 			return option
 		else :
@@ -193,6 +194,10 @@ def main() :
 			elif user_inp == '6' :
 				if person.update_rating() == "Error" :
 					return
+			elif user_inp == '0':
+				print("Terminating Connection.")
+				#option = person.requests("CLOSE", person.user_id, "")
+				return
 
 
 if __name__ == "__main__" :
