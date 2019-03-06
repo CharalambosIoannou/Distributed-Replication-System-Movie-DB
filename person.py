@@ -15,8 +15,8 @@ class Person :
 		while counter!=5:
 			try:
 				ns = Pyro4.locateNS()
-				self.server_list = ns.lookup("frontend")
-				self.actual_server = Pyro4.Proxy(self.server_list)
+				self.server = ns.lookup("frontend")
+				self.actual_server = Pyro4.Proxy(self.server)
 				break
 			except Pyro4.errors.CommunicationError:
 				print( "No fronted server found")
@@ -34,25 +34,25 @@ class Person :
 				print("Servers are not found. Sleeping for 20 seconds and trying again...")
 				sleep(20)
 				ns = Pyro4.locateNS()
-				self.server_list = ns.lookup("frontend")
-				self.actual_server = Pyro4.Proxy(self.server_list)
+				self.server = ns.lookup("frontend")
+				self.actual_server = Pyro4.Proxy(self.server)
 				counter = counter +1
 				self.actual_server.connect()
 				
 		
 	
 	def retrieve_rating(self) :
-		option = self.requests("GET_RATING", self.user_id, "")
-		if option == "Error" :
+		response = self.requests("GET_RATING", self.user_id, "")
+		if response == "Error" :
 			return "Error"
-		print(option)
+		print(response)
 	
 	
 	def view_rating(self) :
-		option = self.requests("VIEW_RATING", self.user_id, "")
-		if option == "Error" :
+		response = self.requests("VIEW_RATING", self.user_id, "")
+		if response == "Error" :
 			return "Error"
-		print(option)
+		print(response)
 	
 	
 	def submit_rating(self) :
@@ -61,50 +61,55 @@ class Person :
 			print("Rating should be between 0 and 5")
 			inp = (input("Enter a rating: "))
 		inp = float(inp)
-		option = self.requests("ADD_RATING", self.user_id, inp)
-		if option == "Error" :
+		response = self.requests("ADD_RATING", self.user_id, inp)
+		if response == "Error" :
 			return "Error"
-		print(option)
+		print(response)
 	
 	
 	def update_rating(self) :
 		inp_movie = input("Enter the movie name that you want to change the rating: ")
 		inp_1 = (input("Enter the new rating: "))
-		while (inp_1 == "" or float(inp_1) <0 or float(inp_1) >5):
+		inp_1 = float(inp_1)
+		merged_inp = [inp_movie, inp_1]
+		while (inp_1 == "" or float(inp_1) <0 or float(inp_1) >5 ):
 			print("Rating should be between 0 and 5")
 			inp_1 = (input("Enter a rating: "))
 		inp_1 = float(inp_1)
 		merged_inp = [inp_movie, inp_1]
-		option = self.requests("UPDATE_RATING", self.user_id, merged_inp)
-		while option == "No movie found" :
+		response = self.requests("UPDATE_RATING", self.user_id, merged_inp)
+		while response == "No movie found" :
 			inp_movie = input("No movie found with this name. Please enter the name of a valid movie: ")
 			merged_inp = [inp_movie, inp_1]
-			option = self.requests("UPDATE_RATING", self.user_id, merged_inp)
-		if option == "Error":
+			response = self.requests("UPDATE_RATING", self.user_id, merged_inp)
+		if response == "Error":
 			return "Error"
-		if (option == "No rating added yet"):
+		if (response == "No rating added yet"):
 			print("You have to add a rating first")
 			return
-		print(option)
+		if (response == "Rating added again" ):
+			print("Update a rating with a value you never entered again")
+			return
+		print(response)
 	
 	
 	def get_avg(self) :
-		option = self.requests("GET_AVG", self.user_id, "")
-		if option == "Error" :
+		response = self.requests("GET_AVG", self.user_id, "")
+		if response == "Error" :
 			return "Error"
-		print(option)
+		print(response)
 	
 	
 	def set_movie_name(self) :
 		inp = input("Enter name of movie: ")
-		option = self.requests("SET_MOVIE", self.user_id, inp)
-		while option == "No movie found" :
+		response = self.requests("SET_MOVIE", self.user_id, inp)
+		while response == "No movie found" :
 			inp = input("No movie found with this name. Please enter the name of a valid movie: ")
-			option = self.requests("SET_MOVIE", self.user_id, inp)
-		if option == "Error" :
+			response = self.requests("SET_MOVIE", self.user_id, inp)
+		if response == "Error" :
 			return "Error"
-		self.movie_name=option
-		print(option)
+		self.movie_name=response
+		print(response)
 	
 	#this function is called for every client request and this is the case in order to sent the data to the front end
 	def requests(self, request, user_id, user_inp) :
@@ -125,8 +130,8 @@ class Person :
 				print("Servers are not found. Sleeping for 20 seconds and trying again...")
 				sleep(20)
 				ns = Pyro4.locateNS()
-				self.server_list = ns.lookup("frontend")
-				self.actual_server = Pyro4.Proxy(self.server_list)
+				self.server = ns.lookup("frontend")
+				self.actual_server = Pyro4.Proxy(self.server)
 				counter = counter +1
 				self.actual_server.connect()
 		
@@ -135,8 +140,8 @@ class Person :
 				print("Servers are not found. Sleeping for 20 seconds and trying again...")
 				sleep(20)
 				ns = Pyro4.locateNS()
-				self.server_list = ns.lookup("frontend")
-				self.actual_server = Pyro4.Proxy(self.server_list)
+				self.server = ns.lookup("frontend")
+				self.actual_server = Pyro4.Proxy(self.server)
 				counter = counter + 1
 				self.actual_server.connect()
 			#return self.actual_server.get_data_from_client(data_to_send)

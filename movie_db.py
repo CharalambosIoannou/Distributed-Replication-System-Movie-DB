@@ -294,10 +294,11 @@ class Movie(object):
 		if (gos != "No updates received"):
 			self.set_list = self.set_timestamp_to_servers()
 		temp_rating= []
-		print("These are the your ratings: ")
+		print("These are your ratings: ")
 		for i in self.rating_tuples:
 			if (i[0] == name and i[3] !='del'):
 				temp_rating.append([i[1],": ",i[2]])
+		print("temp: ", temp_rating)
 		if (len(temp_rating) == 0):
 			res="No ratings added by this user"
 		else:
@@ -311,29 +312,37 @@ class Movie(object):
 		self.copy_to_servers(timestamp_recv)
 		movie_to_change=list_rating[0]
 		movie_exists=False
+		print("here1")
 		view_rat , time=self.view_rating(name,timestamp_recv,movie)
+		print("rat: ", view_rat)
 		if (view_rat== "No ratings added by this user"):
 			return "No rating added yet",self.timestamp
+		
+		for i in self.rating_tuples:
+			if (i[1] == movie_to_change and i[2]==list_rating[1] and name == i[0]):
+				return "Rating added again",self.timestamp
 			
+		print("here2")
 		for i in self.rating_tuples:
 			if (i[1] == movie_to_change and i[3]=='add' and name == i[0]):
-				print("here")
 				movie_exists=True
 				break
 			else:
 				movie_exists=False
-			
+		print("here3")
 		if (movie_exists == True):
 			#self.rating_to_change = list_rating[1]
 			self.new_rating = list_rating[1]
-			print("These are the your ratings: ")
-			print(self.view_rating(name,timestamp_recv,movie))
+			print("These are your ratings: ")
+			print("1")
 			count_in_list = 0
 			for i in self.rating_tuples:
 				if (i[0] == name and i[1]==movie_to_change and i[3] !='del' ):
 					self.rating_to_change = i[2]
 					self.rating_tuples.append([name, i[1], self.rating_to_change,'del' ])
 					self.rating_tuples[count_in_list] = [name, i[1], self.new_rating,'add']
+					#self.rating_tuples[count_in_list] = [name, i[1], self.rating_to_change,'del']
+					#self.rating_tuples.append([name, i[1], self.new_rating,'add'])
 					break
 	
 				count_in_list = count_in_list + 1
@@ -385,7 +394,7 @@ class Movie(object):
 			#return "User not found"
 		rating,self.timestamp = self.get_rating_by_name(name,timestamp_recv,movie)
 		print("AVERAGE: ",rating)
-		avg= "Average: " , sum(rating) / len(rating)
+		avg= "Average: " , round (sum(rating) / len(rating),2)
 		self.set_list = self.set_timestamp_to_servers()
 		self.write()
 		return  avg , self.timestamp
