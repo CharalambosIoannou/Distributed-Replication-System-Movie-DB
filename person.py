@@ -5,7 +5,6 @@ from time import sleep
 import sys
 
 
-
 class Person :
 	def __init__(self) :
 		#connect to the front end server
@@ -19,7 +18,6 @@ class Person :
 				self.actual_server = Pyro4.Proxy(self.server)
 				break
 			except Pyro4.errors.CommunicationError:
-				print( "No fronted server found")
 				print("Attempt ", counter , " out of 5")
 				print("Servers are not found. Sleeping for 20 seconds and trying again...")
 				sleep(20)
@@ -29,7 +27,6 @@ class Person :
 				print("Name server could not found. Start name server by opening a terminal and typing 'pyro4-ns'..")
 				exit()
 			except Pyro4.errors.ConnectionClosedError:
-				print( "No fronted server found")
 				print("Attempt ", counter , " out of 5")
 				print("Servers are not found. Sleeping for 20 seconds and trying again...")
 				sleep(20)
@@ -125,7 +122,6 @@ class Person :
 					self.actual_server._pyroRelease()
 					return "Exit"
 			except Pyro4.errors.ConnectionClosedError:
-				print( "No fronted server found")
 				print("Attempt ", counter , " out of 5")
 				print("Servers are not found. Sleeping for 20 seconds and trying again...")
 				sleep(20)
@@ -144,7 +140,6 @@ class Person :
 				self.actual_server = Pyro4.Proxy(self.server)
 				counter = counter + 1
 				self.actual_server.connect()
-			#return self.actual_server.get_data_from_client(data_to_send)
 		print("No connection could be established")
 		exit()
 
@@ -162,7 +157,7 @@ def main() :
 		print("1. Get a movie rating")
 		print("2. Add a movie rating")
 		print("3. Get a movie average rating")
-		print("4. Change current movie")
+		print("4. Change currently selected movie")
 		print("5. View your ratings")
 		print("6. Update an existing rating")
 		print("0. Close current client connection")
@@ -196,7 +191,6 @@ def main() :
 					return
 			elif user_inp == '0':
 				print("Terminating Connection.")
-				#option = person.requests("CLOSE", person.user_id, "")
 				return
 
 

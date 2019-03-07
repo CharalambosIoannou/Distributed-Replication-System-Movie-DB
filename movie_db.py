@@ -77,15 +77,13 @@ class Movie(object):
 	def gossip(self,timestamp_recv):
 		new_time=time.time()
 		diff = int(new_time - self.org_time)
-		print("DIFF: ", diff)
+		print("Time difference: ", diff)
 		active_servers=[]
 		goss = False
 		print("Received Timestamp: " , timestamp_recv)
-		print("Stored here timestamp: " , self.timestamp)
 		self.server_with_most_recent_data = max(timestamp_recv) #gets data from the server that has the most updates
 		self.server_with_most_recent_data_pos = timestamp_recv.index(max(timestamp_recv))
-		print("Position of the highest number in the timestamp: " , self.server_with_most_recent_data_pos )
-		print("NOW WE ARE ON SERVER: " , int(self.number)-1)
+		print("Using server: " , int(self.number)-1)
 		attempts=0
 		is_active=False
 		for i in range (0,len(self.server_list)):
@@ -97,7 +95,6 @@ class Movie(object):
 						return "No updates received"
 					else:
 						self.server_list[i].set_status()
-						print("new stat: ",self.server_list[i].get_status())
 						if (self.server_list[i].get_status() != "Offline"): #get data only if the server is active or overloaded. If its offline then no data are send
 							self.counter=self.server_with_most_recent_data
 							is_active=True
@@ -107,15 +104,12 @@ class Movie(object):
 		for i in range(0,len(timestamp_recv)):
 			if (timestamp_recv == [0,0,0] and i != int(self.number)-1 and diff %2 == 0): #if the difference of the two times are an even number then the updates are sent. This is the case because i send data periodically
 				print("GOSSIP TIME")
-				print("First time but We need an updated version and we will get values from server: ",i)
 				self.get_data_from_server(i)
 				self.timestamp=timestamp_recv
 				goss=True
 				break
 			elif (i ==self.server_with_most_recent_data_pos and diff %2 == 0):
-				"""self.server_with_most_recent_data > self.timestamp[i] and """
 				print("GOSSIP TIME")
-				print("We need an updated version and we will get values from server: ",i)
 				self.get_data_from_server(i)
 				self.timestamp=timestamp_recv
 				goss=True
@@ -160,8 +154,6 @@ class Movie(object):
 	#this function gets data from the server that has the most updates
 	def get_data_from_server(self,server_number):
 		tmp = {}
-		print("Inside get data funct and the server number is: " , server_number)
-		print("SERVER LIST: ", self.server_list)
 		for i in range (0,len(self.server_list)):
 			if (i == int(server_number)):
 				self.recv_people_dict = self.server_list[i].get_people_from_servers()
@@ -178,14 +170,11 @@ class Movie(object):
 				element2= self.rating_tuples[l]
 				if (element2[0] == element1[0] and element2[1] == element1[1] and element2[2] == element1[2] and element1[3] == 'add' and element2[3]=='del'):
 					element1[3]='del'
-					
 		if (len(self.people_dict) == 0):
 			self.people_dict=self.recv_people_dict
 		else:
 			tmp={**self.people_dict,**self.recv_people_dict} #here i join the dicitonary that i receive from the server with the most updates with the dictionary that is already found in the current server
 			self.people_dict = tmp
-		
-		print("AFTER DEL PEOPLE DICT: " , self.rating_tuples)
 		return True
 	
 	def get_status(self):
@@ -202,11 +191,9 @@ class Movie(object):
 	def copy_to_servers(self,timestamp_recv):
 		active_servers=[]
 		print("Received Timestamp: " , timestamp_recv)
-		print("Stored here timestamp: " , self.timestamp)
 		self.server_with_most_recent_data = max(timestamp_recv)
 		self.server_with_most_recent_data_pos = timestamp_recv.index(max(timestamp_recv))
-		print("Position of the highest number in the timestamp: " , self.server_with_most_recent_data_pos )
-		print("NOW WE ARE ON SERVER: " , int(self.number)-1)
+		print("Using server: " , int(self.number)-1)
 		attempts=0
 		is_active=False
 		for i in range (0,len(self.server_list)):
@@ -227,12 +214,10 @@ class Movie(object):
 
 		for i in range(0,len(timestamp_recv)):
 			if (timestamp_recv == [0,0,0] and i != int(self.number)-1):
-				print("First time but We need an updated version and we will get values from server: ",i)
 				self.get_data_from_server(i)
 				self.timestamp=timestamp_recv
 				break
 			elif (self.server_with_most_recent_data > self.timestamp[i] and i ==self.server_with_most_recent_data_pos):
-				print("We need an updated version and we will get values from server: ",i)
 				self.get_data_from_server(i)
 				self.timestamp=timestamp_recv
 				break
@@ -255,14 +240,6 @@ class Movie(object):
 		file_read1 = open("people dict.txt", "r")
 		dict = json.load(file_read1)
 		return data , dict
-	
-	"""
-	def clear_files(self):
-		self.people_dict = {}
-		self.rating_tuples = []
-		self.write()
-		return "Files Cleared"
-	"""
 	
 	
 	""" Movie Functions"""
@@ -296,7 +273,6 @@ class Movie(object):
 		
 	
 	def view_rating(self,name,timestamp_recv,movie):
-		#self.copy_to_servers(timestamp_recv)
 		gos = self.gossip(timestamp_recv)
 		if (gos != "No updates received"):
 			self.set_list = self.set_timestamp_to_servers()
@@ -305,7 +281,6 @@ class Movie(object):
 		for i in self.rating_tuples:
 			if (i[0] == name and i[3] !='del'):
 				temp_rating.append([i[1],": ",i[2]])
-		print("temp: ", temp_rating)
 		if (len(temp_rating) == 0):
 			res="No ratings added by this user"
 		else:
@@ -319,41 +294,30 @@ class Movie(object):
 		self.copy_to_servers(timestamp_recv)
 		movie_to_change=list_rating[0]
 		movie_exists=False
-		print("here1")
 		view_rat , time=self.view_rating(name,timestamp_recv,movie)
-		print("rat: ", view_rat)
 		if (view_rat== "No ratings added by this user"):
 			return "No rating added yet",self.timestamp
-		
 		for i in self.rating_tuples:
 			if (i[1] == movie_to_change and i[2]==list_rating[1] and name == i[0]):
 				return "Rating added again",self.timestamp
-			
-		print("here2")
 		for i in self.rating_tuples:
 			if (i[1] == movie_to_change and i[3]=='add' and name == i[0]):
 				movie_exists=True
 				break
 			else:
 				movie_exists=False
-		print("here3")
 		if (movie_exists == True):
-			#self.rating_to_change = list_rating[1]
 			self.new_rating = list_rating[1]
 			print("These are your ratings: ")
-			print("1")
 			count_in_list = 0
 			for i in self.rating_tuples:
 				if (i[0] == name and i[1]==movie_to_change and i[3] !='del' ):
 					self.rating_to_change = i[2]
 					self.rating_tuples.append([name, i[1], self.rating_to_change,'del' ])
 					self.rating_tuples[count_in_list] = [name, i[1], self.new_rating,'add']
-					#self.rating_tuples[count_in_list] = [name, i[1], self.rating_to_change,'del']
-					#self.rating_tuples.append([name, i[1], self.new_rating,'add'])
 					break
 	
 				count_in_list = count_in_list + 1
-			print("new user rat dict: ",self.rating_tuples)
 			self.counter = self.counter + 1
 			self.set_list = self.set_timestamp_to_servers()
 			res= "Successfully changed rating of movie ", movie_to_change#," from ", self.rating_to_change, " to ", self.new_rating
@@ -375,7 +339,7 @@ class Movie(object):
 		if name not in self.people_dict:
 			self.people_dict[name] = [movie]
 		current_movie_selected = movie
-		print(name, " made a request to get the rating for the movie ", current_movie_selected)
+		print(name, " wants to get the rating for the movie ", current_movie_selected)
 		id_found = ""
 		for movie in self.movie_rating_dict:
 			if self.get_movie_name_by_id(str(movie)) == current_movie_selected:
@@ -392,7 +356,6 @@ class Movie(object):
 			return None,self.timestamp
 
 	def get_average_rating(self, name,timestamp_recv,movie):
-		#self.copy_to_servers(timestamp_recv)
 		gos = self.gossip(timestamp_recv)
 		if (gos != "No updates received"):
 			self.set_list = self.set_timestamp_to_servers()
@@ -407,7 +370,6 @@ class Movie(object):
 		return  avg , self.timestamp
 
 	def add_rating(self, name, rating, timestamp_recv,movie):
-		#self.users_rating_dict.setdefault(key, []).append(value)
 		self.copy_to_servers(timestamp_recv)
 		current_movie_selected=movie
 		for i in self.rating_tuples:

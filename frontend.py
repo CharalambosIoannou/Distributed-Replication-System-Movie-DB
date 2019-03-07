@@ -3,13 +3,13 @@ from Pyro4.errors import CommunicationError, PyroError
 import random
 from time import sleep
 
+
 @Pyro4.expose
 class FrontEnd(object):
 	#Read the timestamp from file for robustness.
 	#If there is no file or the file is empty then the timestamp is initialized to [0,0,0]
 	def __init__(self,daemon):
 		self.daemon = daemon
-		
 		try:
 			if (self.read_file() == ""):
 				self.timestamp = [0,0,0]
@@ -45,7 +45,6 @@ class FrontEnd(object):
 	#this function finds an available server. It iterates through the list of serves and checks their status. If it finds a server that is active it connects to it
 	def find_available_server(self):
 		for i in range (0, len(self.server_list)):
-			#try:
 			connect_server = Pyro4.Proxy(self.server_list[i])
 			status= connect_server.set_status()
 			print("Status: " , status)
@@ -57,10 +56,9 @@ class FrontEnd(object):
 					print("No active servers found") #if no server is found to be active then the statuses are changed arbitralily again until one server is active
 					i=0
 					self.find_available_server()
-				print("changing server to server: ", i+1)
+				print("changing to server: ", i+1)
 				connect_server = Pyro4.Proxy(self.server_list[i])
 				status= connect_server.set_status()
-
 			return connect_server
 
 	#this function shuts down the front end server
@@ -132,15 +130,6 @@ class FrontEnd(object):
 			print("TimeStamp received from server: ", self.timestamp)
 			self.write()
 			return str(results)
-		
-			"""
-		elif request == "CLOSE":
-			temp=self.timestamp
-			self.timestamp=""
-			self.write()
-			self.timestamp=temp
-			results = self.find_available_server().clear_files()
-			"""
 		
 		elif request == "EXIT":
 			for i in self.server_list:
