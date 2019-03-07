@@ -15,7 +15,6 @@ class FrontEnd(object):
 				self.timestamp = [0,0,0]
 			else:
 				timestamp_in_file=self.read_file()
-				print(timestamp_in_file)
 				my_list = timestamp_in_file.split(",")
 				del my_list[-1]
 				self.timestamp= list(map(int, my_list))
@@ -25,21 +24,25 @@ class FrontEnd(object):
 
 	#call this function to find and connect to the movie servers. This is done at the constructor in the beginning and every time a server force closes
 	def connect(self):
-		self.server_list=[]
-		self.connected_server_list= []
-		ns = Pyro4.locateNS()
-		self.server_1=ns.lookup("movie_server1")
-		self.server_2=ns.lookup("movie_server2")
-		self.server_3=ns.lookup("movie_server3")
-		self.server_list.append(self.server_1)
-		self.server_list.append(self.server_2)
-		self.server_list.append(self.server_3)
-		
-		for server in self.server_list:
-			self.connected_server_list.append(Pyro4.Proxy(server))
-			Pyro4.Proxy(server).empty_servers()
-		for con in self.connected_server_list:
-			con.set_servers(self.server_list)
+		try:
+			self.server_list=[]
+			self.connected_server_list= []
+			ns = Pyro4.locateNS()
+			self.server_1=ns.lookup("movie_server1")
+			self.server_2=ns.lookup("movie_server2")
+			self.server_3=ns.lookup("movie_server3")
+			self.server_list.append(self.server_1)
+			self.server_list.append(self.server_2)
+			self.server_list.append(self.server_3)
+			
+			for server in self.server_list:
+				self.connected_server_list.append(Pyro4.Proxy(server))
+				Pyro4.Proxy(server).empty_servers()
+			for con in self.connected_server_list:
+				con.set_servers(self.server_list)
+		except Pyro4.errors.NamingError:
+			print ("Could not find the servers. Please start them first and then start the frontend")
+			exit()
 		return  True
 
 	#this function finds an available server. It iterates through the list of serves and checks their status. If it finds a server that is active it connects to it
@@ -53,7 +56,7 @@ class FrontEnd(object):
 				i=i+1
 				print(i)
 				if (i == 3):
-					print("No active servers found") #if no server is found to be active then the statuses are changed arbitralily again until one server is active
+					print("No active servers found. Trying again") #if no server is found to be active then the statuses are changed arbitralily again until one server is active
 					i=0
 					self.find_available_server()
 				print("changing to server: ", i+1)
@@ -168,9 +171,8 @@ def main():
 			break
 		except Pyro4.errors.CommunicationError:
 			print("Attempt ", counter , " out of 5")
-			print("Servers are not found. Sleeping for 10 seconds and trying again1...")
+			print("Servers are not found. Sleeping for 10 seconds and trying again...")
 			sleep(10)
-			print("Trying to reconnect")
 			counter = counter + 1
 
 if __name__ == "__main__":

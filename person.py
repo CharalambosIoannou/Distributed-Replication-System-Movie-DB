@@ -122,17 +122,18 @@ class Person :
 					self.actual_server._pyroRelease()
 					return "Exit"
 			except Pyro4.errors.ConnectionClosedError:
-				print("Attempt ", counter , " out of 5")
 				print("Servers are not found. Sleeping for 20 seconds and trying again...")
 				sleep(20)
-				ns = Pyro4.locateNS()
-				self.server = ns.lookup("frontend")
-				self.actual_server = Pyro4.Proxy(self.server)
-				counter = counter +1
-				self.actual_server.connect()
-		
+				try:
+					ns = Pyro4.locateNS()
+					self.server = ns.lookup("frontend")
+					self.actual_server = Pyro4.Proxy(self.server)
+					counter = counter +1
+					self.actual_server.connect()
+				except Pyro4.errors.CommunicationError:
+					print("Could not establish connection. Exiting program")
+					exit()
 			except Pyro4.errors.CommunicationError:
-				print("Attempt ", counter , " out of 5")
 				print("Servers are not found. Sleeping for 20 seconds and trying again...")
 				sleep(20)
 				ns = Pyro4.locateNS()

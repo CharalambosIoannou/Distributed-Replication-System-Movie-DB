@@ -53,9 +53,6 @@ class Movie(object):
 		except FileNotFoundError:
 			self.rating_tuples = []
 			
-		print("1: ", self.rating_tuples)
-		print("2: ", self.people_dict)
-		
 		self.status=""
 		self.movie_name = ""
 		self.movie_name_dict = movie_name_dict1
